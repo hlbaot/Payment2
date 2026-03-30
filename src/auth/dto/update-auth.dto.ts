@@ -1,1 +1,3 @@
-export class UpdateAuthDto {}
+export class UpdateAuthDto {
+  refreshToken?: string | null;
+}

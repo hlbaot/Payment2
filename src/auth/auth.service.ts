@@ -1,5 +1,11 @@
 import * as bcrypt from "bcrypt";
-import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/user/entities/user.entity';
@@ -10,6 +16,7 @@ import { LoginRequest } from './authentication/login.request';
 import { LoginResponse } from './authentication/login.response';
 import { RegisterRequest } from "./authentication/register.request";
 import { RegisterResponse } from "./authentication/register.response";
+import { Wallet, WalletDepositStatus } from 'src/wallet/entities/wallet.entity';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +26,8 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
+    @InjectRepository(Wallet)
+    private readonly walletRepository: Repository<Wallet>,
   ) {}
 
   async validateUser(email: string, password: string): Promise<User> {
@@ -72,19 +81,22 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerRequest.password, 10);
     const userRole = await this.roleRepository.findOne({
       where: { name: "USER" },
-    }); // Ví dụ tìm role từ database
+    });
 
     if (!userRole) {
-      throw new Error("Role not found");
+      throw new NotFoundException('Default USER role not found');
     }
 
     const user = this.userRepository.create({
+      fullName: registerRequest.email.split('@')[0],
       email: registerRequest.email, // Đảm bảo rằng registerRequest.email là một chuỗi hợp lệ
       password: hashedPassword, // Đảm bảo rằng hashedPassword đã được băm đúng cách
       roleSet: [userRole], // Gán roleSet là một mảng với role hợp lệ
+      isActive: true,
     });
 
-    await this.userRepository.save(user);
+    const savedUser = await this.userRepository.save(user);
+    await this.ensureWalletExists(savedUser.id);
     return {
       email: registerRequest.email,
       password: registerRequest.password,
@@ -166,18 +178,60 @@ export class AuthService {
   }
 
   findAll() {
-    return `This action returns all auth`;
+    return this.userRepository.find({
+      order: { createdAt: 'DESC' },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
+  async findOne(id: number) {
+    const user = await this.userRepository.findOne({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Auth record for user ${id} not found`);
+    }
+
+    return user;
   }
 
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
+  async update(id: number, updateAuthDto: UpdateAuthDto) {
+    const user = await this.findOne(id);
+
+    if (updateAuthDto.refreshToken !== undefined) {
+      user.refreshToken = updateAuthDto.refreshToken;
+    }
+
+    return this.userRepository.save(user);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+  async remove(id: number) {
+    const user = await this.findOne(id);
+    await this.userRepository.remove(user);
+    return { deleted: true, id };
+  }
+
+  private async ensureWalletExists(userId: number): Promise<void> {
+    const existingWallet = await this.walletRepository.findOne({
+      where: { userId },
+    });
+
+    if (existingWallet) {
+      return;
+    }
+
+    const wallet = this.walletRepository.create({
+      userId,
+      currency: 'VND',
+      availableBalance: '0',
+      holdBalance: '0',
+      pendingDepositAmount: null,
+      depositStatus: WalletDepositStatus.NONE,
+      depositNote: null,
+      lastDepositRequestedAt: null,
+      lastDepositProcessedAt: null,
+    });
+
+    await this.walletRepository.save(wallet);
   }
 }

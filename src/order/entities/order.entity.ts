@@ -20,6 +20,13 @@ export enum OrderStatus {
   REJECTED = 'rejected',
 }
 
+export enum CommissionStatus {
+  NONE = 'none',
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
 @Entity('orders')
 export class Order {
   @PrimaryGeneratedColumn()
@@ -52,6 +59,28 @@ export class Order {
     default: OrderStatus.PENDING,
   })
   status: OrderStatus;
+
+  @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
+  commissionRateSnapshot: string | null;
+
+  @Column({ type: 'numeric', precision: 15, scale: 2, nullable: true })
+  commissionAmount: string | null;
+
+  @Column({
+    type: 'enum',
+    enum: CommissionStatus,
+    default: CommissionStatus.NONE,
+  })
+  commissionStatus: CommissionStatus;
+
+  @Column({ type: 'timestamp', nullable: true })
+  commissionReviewedAt: Date | null;
+
+  @Column({ type: 'text', nullable: true })
+  commissionRejectReason: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  completedAt: Date | null;
 
   @CreateDateColumn()
   createdAt: Date;

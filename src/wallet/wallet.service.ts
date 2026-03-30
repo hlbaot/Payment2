@@ -10,12 +10,20 @@ import { RequestDepositDto } from './dto/request-deposit.dto';
 import { UpdateWalletDto } from './dto/update-wallet.dto';
 import { Repository } from 'typeorm';
 import { Wallet, WalletDepositStatus } from './entities/wallet.entity';
+import { NotificationService } from 'src/notification/notification.service';
+import { NotificationType } from 'src/notification/entities/notification.entity';
+import {
+  WalletTransactionService,
+} from 'src/wallet-transaction/wallet-transaction.service';
+import { WalletTransactionType } from 'src/wallet-transaction/entities/wallet-transaction.entity';
 
 @Injectable()
 export class WalletService {
   constructor(
     @InjectRepository(Wallet)
     private readonly walletRepository: Repository<Wallet>,
+    private readonly notificationService: NotificationService,
+    private readonly walletTransactionService: WalletTransactionService,
   ) {}
 
   async create(createWalletDto: CreateWalletDto): Promise<Wallet> {
@@ -122,13 +130,40 @@ export class WalletService {
       throw new BadRequestException('Wallet already has a pending deposit');
     }
 
+    const availableBalanceBefore = wallet.availableBalance;
+    const holdBalanceBefore = wallet.holdBalance;
+
     wallet.pendingDepositAmount = requestDepositDto.amount;
     wallet.depositStatus = WalletDepositStatus.PENDING;
     wallet.depositNote = requestDepositDto.note ?? null;
     wallet.lastDepositRequestedAt = new Date();
     wallet.lastDepositProcessedAt = null;
 
-    return this.walletRepository.save(wallet);
+    const savedWallet = await this.walletRepository.save(wallet);
+
+    await this.walletTransactionService.create({
+      walletId: savedWallet.id,
+      userId: savedWallet.userId,
+      type: WalletTransactionType.DEPOSIT_REQUESTED,
+      amount: requestDepositDto.amount,
+      availableBalanceBefore,
+      availableBalanceAfter: savedWallet.availableBalance,
+      holdBalanceBefore,
+      holdBalanceAfter: savedWallet.holdBalance,
+      referenceType: 'wallet',
+      referenceId: savedWallet.id,
+      note: requestDepositDto.note ?? 'Deposit request created',
+    });
+
+    return savedWallet;
+  }
+
+  async requestDepositByUserId(
+    userId: number,
+    requestDepositDto: RequestDepositDto,
+  ): Promise<Wallet> {
+    const wallet = await this.findByUserId(userId);
+    return this.requestDeposit(wallet.id, requestDepositDto);
   }
 
   async approveDeposit(id: number, note?: string): Promise<Wallet> {
@@ -143,6 +178,8 @@ export class WalletService {
 
     const currentBalance = Number(wallet.availableBalance);
     const pendingAmount = Number(wallet.pendingDepositAmount);
+    const availableBalanceBefore = wallet.availableBalance;
+    const holdBalanceBefore = wallet.holdBalance;
 
     wallet.availableBalance = (currentBalance + pendingAmount).toFixed(2);
     wallet.depositStatus = WalletDepositStatus.PROCESSED;
@@ -150,7 +187,32 @@ export class WalletService {
     wallet.lastDepositProcessedAt = new Date();
     wallet.pendingDepositAmount = null;
 
-    return this.walletRepository.save(wallet);
+    const savedWallet = await this.walletRepository.save(wallet);
+
+    await this.walletTransactionService.create({
+      walletId: savedWallet.id,
+      userId: savedWallet.userId,
+      type: WalletTransactionType.DEPOSIT_APPROVED,
+      amount: pendingAmount.toFixed(2),
+      availableBalanceBefore,
+      availableBalanceAfter: savedWallet.availableBalance,
+      holdBalanceBefore,
+      holdBalanceAfter: savedWallet.holdBalance,
+      referenceType: 'wallet',
+      referenceId: savedWallet.id,
+      note: note ?? 'Deposit approved',
+    });
+
+    await this.notificationService.create({
+      userId: savedWallet.userId,
+      type: NotificationType.DEPOSIT_APPROVED,
+      title: 'Deposit approved',
+      message: `Your deposit request of ${pendingAmount.toFixed(2)} has been approved.`,
+      referenceType: 'wallet',
+      referenceId: savedWallet.id,
+    });
+
+    return savedWallet;
   }
 
   async rejectDeposit(
@@ -163,12 +225,43 @@ export class WalletService {
       throw new BadRequestException('Wallet does not have a pending deposit');
     }
 
+    const rejectedAmount = wallet.pendingDepositAmount ?? '0.00';
+    const availableBalanceBefore = wallet.availableBalance;
+    const holdBalanceBefore = wallet.holdBalance;
+
     wallet.depositStatus = WalletDepositStatus.REJECTED;
     wallet.depositNote = rejectDepositDto.note ?? wallet.depositNote;
     wallet.lastDepositProcessedAt = new Date();
     wallet.pendingDepositAmount = null;
 
-    return this.walletRepository.save(wallet);
+    const savedWallet = await this.walletRepository.save(wallet);
+
+    await this.walletTransactionService.create({
+      walletId: savedWallet.id,
+      userId: savedWallet.userId,
+      type: WalletTransactionType.DEPOSIT_REJECTED,
+      amount: rejectedAmount,
+      availableBalanceBefore,
+      availableBalanceAfter: savedWallet.availableBalance,
+      holdBalanceBefore,
+      holdBalanceAfter: savedWallet.holdBalance,
+      referenceType: 'wallet',
+      referenceId: savedWallet.id,
+      note: rejectDepositDto.note ?? 'Deposit rejected',
+    });
+
+    await this.notificationService.create({
+      userId: savedWallet.userId,
+      type: NotificationType.DEPOSIT_REJECTED,
+      title: 'Deposit rejected',
+      message:
+        rejectDepositDto.note ??
+        `Your deposit request of ${rejectedAmount} has been rejected.`,
+      referenceType: 'wallet',
+      referenceId: savedWallet.id,
+    });
+
+    return savedWallet;
   }
 
   async remove(id: number) {

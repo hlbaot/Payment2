@@ -10,10 +10,11 @@ import { CounterServiceModule } from './counter-service/counter-service.module';
 import { SupportMessageModule } from './support-message/support-message.module';
 import { NotificationModule } from './notification/notification.module';
 import { OrderModule } from './order/order.module';
+import { OrderEventModule } from './order-event/order-event.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { dataSource } from 'db/db-source';
 import { ConfigModule } from '@nestjs/config';
-import { JwtStrategy } from './auth/jwt.strategy';
+import { WalletTransactionModule } from './wallet-transaction/wallet-transaction.module';
 import { WebsocketsModule } from './websockets/websockets.module';
 
 @Module({
@@ -32,11 +33,10 @@ import { WebsocketsModule } from './websockets/websockets.module';
   SupportMessageModule,
   WebsocketsModule,
   NotificationModule,
-  OrderModule],
+  OrderModule,
+  OrderEventModule,
+  WalletTransactionModule],
   controllers: [AppController],
-  providers: [
-    JwtStrategy,
-    AppService,
-  ],
+  providers: [AppService],
 })
 export class AppModule {}

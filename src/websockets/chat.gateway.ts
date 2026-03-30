@@ -6,11 +6,13 @@ import {
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
 } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
 import { NotificationService } from "src/notification/notification.service";
 import { SupportMessageStatus } from "src/support-message/entities/support-message.entity";
 import { SupportMessageService } from "src/support-message/support-message.service";
+import { WebsocketEventsService } from "./websocket-events.service";
 
 type SocketUser = {
   id: number;
@@ -26,7 +28,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly supportMessageService: SupportMessageService,
     private readonly notificationService: NotificationService,
+    private readonly websocketEventsService: WebsocketEventsService,
   ) {}
+
+  afterInit(server: Server) {
+    this.websocketEventsService.setServer(server);
+  }
 
   // CONNECT → JOIN ROOM RIÊNG
   handleConnection(client: Socket) {
@@ -109,18 +116,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           receiverId: data.receiverId,
           message: data.message,
         });
-
-        const notificationPayload = {
-          senderId: sender.id,
-          receiverId: data.receiverId,
-          content: data.message,
-          createdAt: saved.createdAt,
-          type: "support_reply",
-        };
-
-        this.server
-          .to(`user_${data.receiverId}`)
-          .emit("notification:new", notificationPayload);
       } catch (notifError) {
         console.error("Error creating/sending notification:", notifError);
       }

@@ -5,5 +5,6 @@ export class UpdateSupportMessageDto {
   supporterId?: number;
   messageText?: string;
   type?: string;
+  depositAmount?: string;
   status?: SupportMessageStatus;
 }

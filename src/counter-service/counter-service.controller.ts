@@ -7,7 +7,11 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { Roles } from 'src/auth/roles.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
 import { CounterServiceService } from './counter-service.service';
 import { CreateCounterServiceDto } from './dto/create-counter-service.dto';
 import { UpdateCounterServiceDto } from './dto/update-counter-service.dto';
@@ -17,6 +21,8 @@ export class CounterServiceController {
   constructor(private readonly counterServiceService: CounterServiceService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   create(@Body() createCounterServiceDto: CreateCounterServiceDto) {
     return this.counterServiceService.create(createCounterServiceDto);
   }
@@ -37,6 +43,8 @@ export class CounterServiceController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateCounterServiceDto: UpdateCounterServiceDto,
@@ -45,6 +53,8 @@ export class CounterServiceController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.counterServiceService.remove(id);
   }

@@ -32,11 +32,12 @@ export class User {
     @Column({ type: "text", nullable: true })
     refreshToken: string | null;
 
-    @Column({ unique: true, length: 20, nullable: true })
-    phoneNumber: string;
+    @Column({ type: 'varchar', unique: true, length: 20, nullable: true })
+    phoneNumber: string | null;
 
-    @Column({ length: 100, nullable: true })
-    country: string;
+    @Column({ type: 'varchar', length: 100, nullable: true })
+    country: string | null;
+    
     @Column({ default: true })
     isActive: boolean;
 

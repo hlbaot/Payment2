@@ -470,40 +470,43 @@ Lưu toàn bộ thông báo gửi cho user.
 
 ## 8. Dashboard / màn hình gợi ý
 
+Quy ước:
+
+* `[x]` Đã xong
+* `[~]` Đã có một phần
+* `[ ]` Chưa làm
+
 ### User app/web
 
-* Đăng ký / đăng nhập
-* Trang chủ
-* Ví của tôi
-* Nạp tiền qua chăm sóc khách hàng
-* Danh sách quầy
-* Chi tiết quầy
-* Tạo đơn
-* Danh sách đơn hàng
-* Chi tiết đơn hàng
-* Hỗ trợ khách hàng
-* Thông báo
-* Hồ sơ cá nhân
+* `[x]` Đăng ký / đăng nhập
+* `[ ]` Trang chủ
+* `[x]` Ví của tôi
+* `[x]` Danh sách quầy
+* `[x]` Chi tiết quầy
+* `[x]` Danh sách đơn hàng
+* `[x]` Chi tiết đơn hàng
+* `[x]` Hỗ trợ khách hàng
+* `[x]` Thông báo
+* `[x]` Hồ sơ cá nhân
 
 ### Supporter dashboard
 
-* Danh sách yêu cầu nạp tiền đang chờ
-* Chuyển yêu cầu nạp tiền cho admin
-* Danh sách đơn chờ xử lý
-* Chi tiết đơn và timeline
-* Nhắn tin hỗ trợ user
-* Thống kê xử lý cá nhân
+* `[ ]` Danh sách yêu cầu nạp tiền đang chờ
+* `[x]` Chuyển yêu cầu nạp tiền cho admin
+* `[ ]` Danh sách đơn chờ xử lý
+* `[x]` Chi tiết đơn và timeline
+* `[x]` Nhắn tin hỗ trợ user
 
 ### Admin dashboard
 
-* Quản lý user
-* Quản lý supporter
-* Quản lý quầy
-* Quản lý dịch vụ quầy
-* Quản lý đơn hàng
-* Xử lý nạp tiền trên ví
-* Quản lý notification hệ thống
-* Dashboard thống kê
+* `[x]` Quản lý user
+* `[x]` Quản lý supporter
+* `[x]` Quản lý quầy
+* `[x]` Quản lý dịch vụ quầy
+* `[x]` Quản lý đơn hàng
+* `[x]` Xử lý nạp tiền trên ví
+* `[x]` Quản lý notification hệ thống
+* `[ ]` Dashboard thống kê
 
 ---
 

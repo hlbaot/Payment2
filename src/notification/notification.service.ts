@@ -1,7 +1,10 @@
 import {
   BadRequestException,
+  ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
@@ -9,6 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification, NotificationType } from './entities/notification.entity';
 import { User } from 'src/user/entities/user.entity';
+import { WebsocketEventsService } from 'src/websockets/websocket-events.service';
 
 @Injectable()
 export class NotificationService {
@@ -17,6 +21,8 @@ export class NotificationService {
     private readonly notificationRepo: Repository<Notification>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @Inject(forwardRef(() => WebsocketEventsService))
+    private readonly websocketEventsService: WebsocketEventsService,
   ) {}
 
   async create(
@@ -69,12 +75,23 @@ export class NotificationService {
       readAt: null,
     });
 
-    return this.notificationRepo.save(notification);
+    const savedNotification = await this.notificationRepo.save(notification);
+    this.websocketEventsService.emitNotification(savedNotification);
+
+    return savedNotification;
   }
 
-  async findAll(userId?: number): Promise<Notification[]> {
+  async findAll(
+    userId?: number,
+    type?: NotificationType,
+    isRead?: boolean,
+  ): Promise<Notification[]> {
     return this.notificationRepo.find({
-      ...(userId ? { where: { userId } } : {}),
+      where: {
+        ...(userId ? { userId } : {}),
+        ...(type ? { type } : {}),
+        ...(isRead !== undefined ? { isRead } : {}),
+      },
       order: {
         createdAt: 'DESC',
       },
@@ -90,6 +107,27 @@ export class NotificationService {
 
     if (!notification) {
       throw new NotFoundException(`Notification ${id} not found`);
+    }
+
+    return notification;
+  }
+
+  async findOneForUser(
+    id: number,
+    userId: number,
+    roles: string[] = [],
+  ): Promise<Notification> {
+    const notification = await this.findOne(id);
+    const normalizedRoles = roles.map((role) => role.toUpperCase());
+
+    if (normalizedRoles.includes('ADMIN')) {
+      return notification;
+    }
+
+    if (notification.userId !== userId) {
+      throw new ForbiddenException(
+        'You can only access your own notifications',
+      );
     }
 
     return notification;
@@ -135,6 +173,39 @@ export class NotificationService {
     const notification = await this.findOne(id);
     await this.notificationRepo.remove(notification);
     return { deleted: true, id };
+  }
+
+  async markAsReadForUser(
+    id: number,
+    userId: number,
+    roles: string[] = [],
+  ): Promise<Notification> {
+    const notification = await this.findOneForUser(id, userId, roles);
+
+    if (!notification.isRead) {
+      notification.isRead = true;
+      notification.readAt = new Date();
+    }
+
+    return this.notificationRepo.save(notification);
+  }
+
+  async markAllAsRead(userId: number): Promise<{ updated: number }> {
+    const unreadNotifications = await this.notificationRepo.find({
+      where: { userId, isRead: false },
+    });
+
+    if (!unreadNotifications.length) {
+      return { updated: 0 };
+    }
+
+    for (const notification of unreadNotifications) {
+      notification.isRead = true;
+      notification.readAt = new Date();
+    }
+
+    await this.notificationRepo.save(unreadNotifications);
+    return { updated: unreadNotifications.length };
   }
 
   private buildDefaultTitle(

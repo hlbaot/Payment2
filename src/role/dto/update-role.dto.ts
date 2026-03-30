@@ -1,1 +1,3 @@
-export class UpdateRoleDto {}
+export class UpdateRoleDto {
+  name?: string;
+}

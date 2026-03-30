@@ -33,6 +33,9 @@ export class SupportMessage {
   })
   status: SupportMessageStatus;
 
+  @Column({ type: 'varchar', length: 50, default: 'private' })
+  type: string;
+
   @Column({ type: 'text' })
   messageText: string;
 
