@@ -1,13 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
 import { ApiBody } from '@nestjs/swagger';
 import { LoginRequest } from './authentication/login.request';
 import { LoginResponse } from './authentication/login.response';
 import { RefreshTokenRequest } from './authentication/refresh-token.request';
 import { RegisterRequest } from './authentication/register.request';
 import { RegisterResponse } from './authentication/register.response';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -33,5 +39,18 @@ export class AuthController {
     @Body() registerRequest: RegisterRequest,
   ): Promise<RegisterResponse> {
     return this.authService.register(registerRequest);
+  }
+
+  @Get('profile')
+  @UseGuards(JwtAuthGuard)
+  async profile(@Req() req: { user: { userId: number } }) {
+    return this.authService.getProfile(req.user.userId);
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  async logout(@Req() req: { user: { userId: number } }) {
+    await this.authService.logout(req.user.userId);
+    return { success: true };
   }
 }

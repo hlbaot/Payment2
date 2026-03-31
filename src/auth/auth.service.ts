@@ -107,6 +107,43 @@ export class AuthService {
     return this.userRepository.update(userId, { refreshToken: null });
   }
 
+  async getProfile(userId: number) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['wallet'],
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User ${userId} not found`);
+    }
+
+    return {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      country: user.country,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      roles: user.roleSet.map((role) => role.name),
+      wallet: user.wallet
+        ? {
+            id: user.wallet.id,
+            currency: user.wallet.currency,
+            availableBalance: user.wallet.availableBalance,
+            holdBalance: user.wallet.holdBalance,
+            depositStatus: user.wallet.depositStatus,
+            pendingDepositAmount: user.wallet.pendingDepositAmount,
+            depositNote: user.wallet.depositNote,
+            lastDepositRequestedAt: user.wallet.lastDepositRequestedAt,
+            lastDepositProcessedAt: user.wallet.lastDepositProcessedAt,
+            createdAt: user.wallet.createdAt,
+          }
+        : null,
+    };
+  }
+
   // ===================== REFRESH TOKEN =====================
   async refreshTokens(refreshToken: string): Promise<LoginResponse> {
     try {
