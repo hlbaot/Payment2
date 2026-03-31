@@ -14,38 +14,50 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const demoAccounts = fakeUsers;
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
 
     setTimeout(() => {
       setIsLoading(false);
       const normalizedEmail = email.trim().toLowerCase();
+      
+      // 1. Kiểm tra tài khoản Demo có sẵn
       const matchedUser = fakeUsers.find(
         (user) => user.email.toLowerCase() === normalizedEmail && user.password === password
       );
 
+      if (matchedUser) {
+        sessionStorage.setItem('isLoggedIn', 'true');
+        sessionStorage.setItem('userRole', matchedUser.role);
+        sessionStorage.setItem('userName', matchedUser.userName);
+        sessionStorage.setItem('userEmail', matchedUser.email);
+        sessionStorage.setItem('walletBalance', String(matchedUser.walletBalance));
+        router.push(matchedUser.destination);
+        return;
+      }
+
+      // 2. Nếu không phải tk Demo -> Kiểm tra Mã mời (để tự động đăng ký)
+      const VALID_INVITE_CODE = 'VIP888';
+      
+      if (inviteCode !== VALID_INVITE_CODE) {
+        setError('Mã mời không hợp lệ. Vui lòng thử lại.');
+        return;
+      }
+
+      // 3. Mã mời đúng -> Tạo session cho user mới và vào Chợ Quầy
       sessionStorage.setItem('isLoggedIn', 'true');
-      sessionStorage.setItem(
-        'userRole',
-        matchedUser?.role ?? 'user'
-      );
-      sessionStorage.setItem(
-        'userName',
-        matchedUser?.userName ?? 'John Doe'
-      );
-      sessionStorage.setItem(
-        'userEmail',
-        matchedUser?.email ?? fakeUsers.find((user) => user.role === 'user')?.email ?? 'user@kinetic.com'
-      );
-      sessionStorage.setItem(
-        'walletBalance',
-        String(matchedUser?.walletBalance ?? fakeUsers.find((user) => user.role === 'user')?.walletBalance ?? 0)
-      );
-      router.push(matchedUser?.destination ?? '/counter-market');
+      sessionStorage.setItem('userRole', 'user');
+      sessionStorage.setItem('userName', normalizedEmail.split('@')[0] || 'New User');
+      sessionStorage.setItem('userEmail', normalizedEmail);
+      sessionStorage.setItem('walletBalance', '0');
+      
+      router.push('/counter-market');
     }, 1200);
   };
 
@@ -80,6 +92,15 @@ export default function LoginPage() {
                 <h1 className="text-center text-[24px] font-bold tracking-[-0.04em] text-[#1C1C1C] sm:text-[28px]">
                   Welcome
                 </h1>
+
+                {error && (
+                  <div className="mt-4 rounded-xl bg-red-50 p-4 text-[13px] font-medium text-red-500 border border-red-100 animate-in fade-in slide-in-from-top-1">
+                    <div className="flex items-center gap-2">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      {error}
+                    </div>
+                  </div>
+                )}
 
                 <div className="mt-7 sm:mt-8">
                   <label

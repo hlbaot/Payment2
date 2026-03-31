@@ -1,10 +1,14 @@
 'use client';
 
-import ChatWidget from '@/components/ChatWidget';
 import { I18nProvider, useI18n } from '@/components/I18nProvider';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+
+const ChatWidget = dynamic(() => import('@/components/ChatWidget'), {
+  ssr: false,
+});
 
 function SupporterSessionFallback() {
   const { t } = useI18n();
@@ -39,6 +43,7 @@ export default function SupporterLayout({ children }: { children: ReactNode }) {
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsReady(true);
   }, [router]);
 

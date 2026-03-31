@@ -1,19 +1,23 @@
- 'use client';
+'use client';
 
+import dynamic from 'next/dynamic';
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ChatWidget from "@/components/ChatWidget";
 import { I18nProvider } from "@/components/I18nProvider";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
+
+const ChatWidget = dynamic(() => import('@/components/ChatWidget'), {
+  ssr: false,
+});
 
 export default function MainLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '';
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const hideFooterRoutes = new Set(["/find-a-location", "/orders"]);
@@ -38,6 +42,7 @@ export default function MainLayout({
 
   useEffect(() => {
     if (!requiresLogin) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAuthorized(true);
       return;
     }

@@ -243,10 +243,11 @@ function StepIcon({ tone }: { tone: StepTone }) {
 
 export default function OrderStatusPage() {
   const params = useParams<{ id: string }>();
+  const routeId = params?.id ?? '';
   const [isRefreshing, setIsRefreshing] = useState(false);
   const order = useMemo(
-    () => orders.find((entry) => entry.id === params.id),
-    [params.id]
+    () => orders.find((entry) => entry.id === routeId),
+    [routeId]
   );
 
   const statusCopy = useMemo(
@@ -271,7 +272,7 @@ export default function OrderStatusPage() {
   };
 
   const handleSupport = () => {
-    const orderId = order?.orderNumber ?? `#${params.id}`;
+    const orderId = order?.orderNumber ?? `#${routeId}`;
     const message = `I need help with Order ${orderId}`;
     
     // Simulate opening chat with auto-paste

@@ -235,7 +235,7 @@ export default function ChatWidget({ prefillMessage }: { prefillMessage?: string
         <div className="bg-gradient-to-r from-[#FF6600] to-[#E65C00] px-6 py-5 flex items-center gap-4">
           <div className="relative">
             <div className="w-12 h-12 rounded-[16px] bg-white/20 flex items-center justify-center text-white text-xl font-bold shadow-inner">
-              SG
+              RS
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-400 border-2 border-white rounded-full"/>
           </div>
@@ -260,7 +260,7 @@ export default function ChatWidget({ prefillMessage }: { prefillMessage?: string
               {/* Avatar */}
               {msg.from === 'support' && (
                 <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary shrink-0 mb-1">
-                  SG
+                  RS
                 </div>
               )}
 
@@ -281,7 +281,7 @@ export default function ChatWidget({ prefillMessage }: { prefillMessage?: string
           {isTyping && (
             <div className="flex items-end gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary shrink-0">
-                SG
+                RS
               </div>
               <div className="bg-white border border-gray-100 px-4 py-3.5 rounded-2xl rounded-bl-sm shadow-sm flex items-center gap-1.5">
                 <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0ms]"/>
@@ -327,7 +327,7 @@ export default function ChatWidget({ prefillMessage }: { prefillMessage?: string
         <div className="px-5 pb-4 flex items-center justify-center gap-1.5 bg-white">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-gray-300"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           <span className="text-[10px] text-gray-300 font-medium">
-            {locale === 'vi' ? 'Ma hoa dau-cuoi · SwiftGuard Kinetic' : 'End-to-end encrypted · SwiftGuard Kinetic'}
+            {locale === 'vi' ? 'Ma hoa dau-cuoi · Ria Support' : 'End-to-end encrypted · Ria Support'}
           </span>
         </div>
 

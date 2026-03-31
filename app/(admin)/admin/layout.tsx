@@ -1,10 +1,10 @@
 'use client';
 
-import ChatWidget from '@/components/ChatWidget';
 import { I18nProvider } from '@/components/I18nProvider';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -19,6 +19,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsReady(true);
   }, [router]);
 
@@ -36,7 +37,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <p className="text-[15px] font-semibold text-gray-700">Checking admin session...</p>
           </div>
         </div>
-        <ChatWidget />
       </I18nProvider>
     );
   }
@@ -44,7 +44,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <I18nProvider>
       {children}
-      <ChatWidget />
     </I18nProvider>
   );
 }
