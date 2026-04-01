@@ -7,6 +7,8 @@ export type SupportMessage = {
   sender: 'user' | 'supporter';
   text: string;
   time: string;
+  status?: 'sending' | 'sent' | 'error';
+  imageUrl?: string;
 };
 
 export type SupportConversation = {
@@ -242,12 +244,14 @@ function normalizeSupportConversations(rawConversations: unknown): SupportConver
         : [],
       notes: Array.isArray(conversation.notes) ? conversation.notes : [],
       messages: Array.isArray(conversation.messages)
-        ? conversation.messages.map((message, messageIndex) => ({
-            id: message?.id ?? `restored-message-${index + 1}-${messageIndex + 1}`,
-            sender: message?.sender === 'supporter' ? 'supporter' : 'user',
-            text: message?.text ?? '',
-            time: message?.time ?? 'Now',
-          }))
+          ? conversation.messages.map((message, messageIndex) => ({
+              id: message?.id ?? `restored-message-${index + 1}-${messageIndex + 1}`,
+              sender: message?.sender === 'supporter' ? 'supporter' : 'user',
+              text: message?.text ?? '',
+              time: message?.time ?? 'Now',
+              status: message?.status,
+              imageUrl: message?.imageUrl,
+            }))
         : [],
     };
   });
@@ -306,9 +310,10 @@ export function appendConversationMessage(input: {
   userEmail: string;
   sender: 'user' | 'supporter';
   text: string;
+  imageUrl?: string;
 }) {
   const trimmedText = input.text.trim();
-  if (!trimmedText) return null;
+  if (!trimmedText && !input.imageUrl) return null;
 
   const nextTime = getNowLabel();
   const conversations = loadSupportConversations();
@@ -322,6 +327,7 @@ export function appendConversationMessage(input: {
     sender: input.sender,
     text: trimmedText,
     time: nextTime,
+    imageUrl: input.imageUrl,
   };
 
   let nextConversations: SupportConversation[];

@@ -10,7 +10,7 @@ export default function CreateOrderPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [amount, setAmount] = useState('');
-  const currentServiceStep = Number(searchParams.get('serviceStep') ?? '0');
+  const currentServiceStep = Number(searchParams?.get('serviceStep') ?? '0');
   const nextServiceStep = Math.min(currentServiceStep + 1, 2);
 
   const handleCreateOrder = () => {

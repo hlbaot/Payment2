@@ -222,6 +222,7 @@ export default function AdminOrdersPage() {
   const [highlightedWalletId, setHighlightedWalletId] = useState<string | null>(null);
   const [editingWalletId, setEditingWalletId] = useState<string | null>(null);
   const [walletDraft, setWalletDraft] = useState('');
+  const [stoppedItemIds, setStoppedItemIds] = useState<string[]>([]);
 
   const parseCurrency = (value: string) => Number(value.replace(/[^0-9.]+/g, '')) || 0;
   const formatCurrency = (value: number) =>
@@ -649,6 +650,27 @@ export default function AdminOrdersPage() {
                                     <line x1="9" y1="9" x2="15" y2="15" />
                                   </svg>
                                   {t('adminOrders.delete')}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setStoppedItemIds(prev => 
+                                      prev.includes(item.id) 
+                                        ? prev.filter(id => id !== item.id) 
+                                        : [...prev, item.id]
+                                    );
+                                  }}
+                                  disabled={activeOrderStatus === 'Approved'}
+                                  className={`inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl px-4 text-[13px] font-bold transition-colors disabled:cursor-not-allowed disabled:bg-[#F3F4F6] disabled:text-[#94A3B8] ${
+                                    stoppedItemIds.includes(item.id)
+                                      ? 'bg-[#F1F5F9] text-[#64748B] hover:bg-[#E2E8F0]'
+                                      : 'bg-[#FFF4DB] text-[#D97706] hover:bg-[#FFF8E8]'
+                                  }`}
+                                >
+                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="6" y="6" width="12" height="12" rx="2" ry="2" />
+                                  </svg>
+                                  {stoppedItemIds.includes(item.id) ? 'Đã dừng' : 'Dừng'}
                                 </button>
                               </div>
                             </div>

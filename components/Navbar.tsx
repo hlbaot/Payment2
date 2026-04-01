@@ -82,44 +82,44 @@ const moneyTransfersMenu = {
 };
 
 const countryOptions = [
-  { code: 'AR', name: 'Argentina', flag: '🇦🇷' },
-  { code: 'AU', name: 'Australia', flag: '🇦🇺' },
-  { code: 'AT', name: 'Austria', flag: '🇦🇹' },
-  { code: 'BE', name: 'Belgium', flag: '🇧🇪' },
-  { code: 'CA', name: 'Canada', flag: '🇨🇦' },
-  { code: 'CL', name: 'Chile', flag: '🇨🇱' },
-  { code: 'CO', name: 'Colombia', flag: '🇨🇴' },
-  { code: 'CZ', name: 'Czechia', flag: '🇨🇿' },
-  { code: 'DK', name: 'Denmark', flag: '🇩🇰' },
-  { code: 'EE', name: 'Estonia', flag: '🇪🇪' },
-  { code: 'FI', name: 'Finland', flag: '🇫🇮' },
-  { code: 'FR', name: 'France', flag: '🇫🇷' },
-  { code: 'DE', name: 'Germany', flag: '🇩🇪' },
-  { code: 'GR', name: 'Greece', flag: '🇬🇷' },
-  { code: 'HU', name: 'Hungary', flag: '🇭🇺' },
-  { code: 'IN', name: 'India', flag: '🇮🇳' },
-  { code: 'IE', name: 'Ireland', flag: '🇮🇪' },
-  { code: 'IT', name: 'Italy', flag: '🇮🇹' },
-  { code: 'LV', name: 'Latvia', flag: '🇱🇻' },
-  { code: 'LT', name: 'Lithuania', flag: '🇱🇹' },
-  { code: 'LU', name: 'Luxembourg', flag: '🇱🇺' },
-  { code: 'MY', name: 'Malaysia', flag: '🇲🇾' },
-  { code: 'MX', name: 'Mexico', flag: '🇲🇽' },
-  { code: 'NL', name: 'Netherlands', flag: '🇳🇱' },
-  { code: 'NZ', name: 'New Zealand', flag: '🇳🇿' },
-  { code: 'NO', name: 'Norway', flag: '🇳🇴' },
-  { code: 'PH', name: 'Philippines', flag: '🇵🇭' },
-  { code: 'PL', name: 'Poland', flag: '🇵🇱' },
-  { code: 'PT', name: 'Portugal', flag: '🇵🇹' },
-  { code: 'RO', name: 'Romania', flag: '🇷🇴' },
-  { code: 'SN', name: 'Senegal', flag: '🇸🇳' },
-  { code: 'SG', name: 'Singapore', flag: '🇸🇬' },
-  { code: 'ES', name: 'Spain', flag: '🇪🇸' },
-  { code: 'SE', name: 'Sweden', flag: '🇸🇪' },
-  { code: 'CH', name: 'Switzerland', flag: '🇨🇭' },
-  { code: 'UA', name: 'Ukraine', flag: '🇺🇦' },
-  { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
-  { code: 'JP', name: 'Japan', flag: '🇯🇵' },
+  { code: 'AR', name: 'Argentina' },
+  { code: 'AU', name: 'Australia' },
+  { code: 'AT', name: 'Austria' },
+  { code: 'BE', name: 'Belgium' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'CL', name: 'Chile' },
+  { code: 'CO', name: 'Colombia' },
+  { code: 'CZ', name: 'Czechia' },
+  { code: 'DK', name: 'Denmark' },
+  { code: 'EE', name: 'Estonia' },
+  { code: 'FI', name: 'Finland' },
+  { code: 'FR', name: 'France' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'GR', name: 'Greece' },
+  { code: 'HU', name: 'Hungary' },
+  { code: 'IN', name: 'India' },
+  { code: 'IE', name: 'Ireland' },
+  { code: 'IT', name: 'Italy' },
+  { code: 'LV', name: 'Latvia' },
+  { code: 'LT', name: 'Lithuania' },
+  { code: 'LU', name: 'Luxembourg' },
+  { code: 'MY', name: 'Malaysia' },
+  { code: 'MX', name: 'Mexico' },
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'NZ', name: 'New Zealand' },
+  { code: 'NO', name: 'Norway' },
+  { code: 'PH', name: 'Philippines' },
+  { code: 'PL', name: 'Poland' },
+  { code: 'PT', name: 'Portugal' },
+  { code: 'RO', name: 'Romania' },
+  { code: 'SN', name: 'Senegal' },
+  { code: 'SG', name: 'Singapore' },
+  { code: 'ES', name: 'Spain' },
+  { code: 'SE', name: 'Sweden' },
+  { code: 'CH', name: 'Switzerland' },
+  { code: 'UA', name: 'Ukraine' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'JP', name: 'Japan' },
 ];
 
 const resourcesMenu = {
@@ -154,6 +154,25 @@ const resourcesMenu = {
     ],
   },
 };
+
+function FlagIcon({ code }: { code: string }) {
+  return (
+    <img
+      src={`https://flagcdn.com/${code.toLowerCase()}.svg`}
+      width="24"
+      alt=""
+      style={{
+        display: 'inline-block',
+        verticalAlign: 'middle',
+        borderRadius: '2px',
+        maxWidth: '100%',
+        height: 'auto',
+        aspectRatio: '3/2',
+        objectFit: 'cover',
+      }}
+    />
+  );
+}
 
 export default function Navbar() {
   const { locale, t } = useI18n();
@@ -310,7 +329,7 @@ export default function Navbar() {
     mobile ? (
       <button type="button" className="site-chip" aria-label={t('nav.countrySelector')}>
         <span className="site-chip__emoji-flag" aria-hidden="true">
-          {selectedCountry.flag}
+          <FlagIcon code={selectedCountry.code} />
         </span>
         <span className="site-chip__label">{selectedCountry.code}</span>
         <ChevronIcon />
@@ -331,7 +350,7 @@ export default function Navbar() {
           onClick={() => setShowCountryMenu((current) => !current)}
         >
           <span className="site-chip__emoji-flag" aria-hidden="true">
-            {selectedCountry.flag}
+            <FlagIcon code={selectedCountry.code} />
           </span>
           <span className="site-chip__label">{selectedCountry.code}</span>
           <span className={`site-chip__chevron${showCountryMenu ? ' is-open' : ''}`}>
@@ -353,7 +372,7 @@ export default function Navbar() {
                   }}
                 >
                   <span className="site-country-menu__flag" aria-hidden="true">
-                    {country.flag}
+                    <FlagIcon code={country.code} />
                   </span>
                   <span>{country.name}</span>
                 </button>
@@ -374,8 +393,8 @@ export default function Navbar() {
         setShowCountryModal(true);
       }}
     >
-      <span className="mr-3 text-[18px]" aria-hidden="true">
-        {selectedCountry.flag}
+      <span className="mr-3 flex h-4 w-6 items-center overflow-hidden rounded-[2px]" aria-hidden="true">
+        <FlagIcon code={selectedCountry.code} />
       </span>
       <span className="flex-1 text-left">{locale === 'vi' ? 'Quốc gia' : 'Country'}</span>
       <span className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#94A3B8]">
@@ -518,7 +537,7 @@ export default function Navbar() {
                   }}
                 >
                   <span className="site-country-modal__flag" aria-hidden="true">
-                    {country.flag}
+                    <FlagIcon code={country.code} />
                   </span>
                   <span className="site-country-modal__name">{country.name}</span>
                   <span className="site-country-modal__code">{country.code}</span>
@@ -558,7 +577,7 @@ export default function Navbar() {
                   ? false
                   : link.href === '/'
                     ? pathname === '/'
-                    : pathname === link.href || pathname.startsWith(`${link.href}/`);
+                    : pathname === link.href || pathname?.startsWith(`${link.href}/`);
                 const isTransfersLink = link.href === '/';
 
                 if (isResourcesLink) {
@@ -744,7 +763,7 @@ export default function Navbar() {
               const isActive =
                 link.href === '/'
                   ? pathname === '/'
-                  : pathname === link.href || pathname.startsWith(`${link.href}/`);
+                  : pathname === link.href || pathname?.startsWith(`${link.href}/`);
 
               return (
                 <Link

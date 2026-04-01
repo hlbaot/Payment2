@@ -17,7 +17,10 @@
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "sass": "^1.98.0"
+    "sass": "^1.98.0",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
+    "swr": "^2.4.1"
   },
   "devDependencies": {
     "@types/google.maps": "^3.58.1",
