@@ -20,10 +20,11 @@ type NavLink = {
 
 const marketingLinks: NavLink[] = [
   { href: '/', labelKey: 'nav.moneyTransfers' },
-  { href: '/find-a-location', labelKey: 'nav.findLocation' },
+  // { href: '/find-a-location', labelKey: 'nav.findLocation' },
   { href: '/orders', labelKey: 'nav.trackTransfer' },
-  { href: '/documentation', labelKey: 'nav.resources' },
   { href: '/counter-market', labelKey: 'nav.counter' },
+  { href: '/wallet', labelKey: 'nav.wallet' },
+  { href: '#', labelKey: 'nav.help' },
 ];
 
 const accountLinks: NavLink[] = [
@@ -122,38 +123,7 @@ const countryOptions = [
   { code: 'JP', name: 'Japan' },
 ];
 
-const resourcesMenu = {
-  en: {
-    title: 'Fast and safe money transfers',
-    toolsTitle: 'Tools',
-    companyTitle: 'Company',
-    partnershipsTitle: 'Partnerships',
-    promoTitle: 'Send money on the go',
-    tools: ['Currency converter', 'IBAN Calculator', 'Help center'],
-    company: ['Blog', 'About us', 'Careers', 'Sponsorships', 'Leadership', 'Services'],
-    partnerships: [
-      'Become an agent',
-      'Become a digital partner',
-      'Become a strategic partner',
-      'Become an affiliate',
-    ],
-  },
-  vi: {
-    title: 'Chuyển tiền nhanh và an toàn',
-    toolsTitle: 'Công cụ',
-    companyTitle: 'Công ty',
-    partnershipsTitle: 'Đối tác',
-    promoTitle: 'Gửi tiền mọi lúc mọi nơi',
-    tools: ['Công cụ đổi tiền', 'Máy tính IBAN', 'Trung tâm trợ giúp'],
-    company: ['Blog', 'Về chúng tôi', 'Tuyển dụng', 'Tài trợ', 'Lãnh đạo', 'Dịch vụ'],
-    partnerships: [
-      'Trở thành đại lý',
-      'Trở thành đối tác số',
-      'Trở thành đối tác chiến lược',
-      'Trở thành đối tác liên kết',
-    ],
-  },
-};
+
 
 function FlagIcon({ code }: { code: string }) {
   return (
@@ -185,15 +155,12 @@ export default function Navbar() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showCountryModal, setShowCountryModal] = useState(false);
   const [showTransfersMenu, setShowTransfersMenu] = useState(false);
-  const [showResourcesMenu, setShowResourcesMenu] = useState(false);
   const [showCountryMenu, setShowCountryMenu] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState(countryOptions[0]);
   const countryMenuRef = useRef<HTMLDivElement | null>(null);
   const transfersCloseTimerRef = useRef<number | null>(null);
-  const resourcesCloseTimerRef = useRef<number | null>(null);
-  const showNavOverlay = showTransfersMenu || showResourcesMenu;
+  const showNavOverlay = showTransfersMenu;
   const transferCopy = locale === 'vi' ? moneyTransfersMenu.vi : moneyTransfersMenu.en;
-  const resourcesCopy = locale === 'vi' ? resourcesMenu.vi : resourcesMenu.en;
   const getNavLabel = (link: { label?: string; labelKey?: string }) =>
     link.labelKey ? t(link.labelKey) : link.label ?? '';
 
@@ -259,7 +226,6 @@ export default function Navbar() {
     setShowMobileMenu(false);
     setShowProfileMenu(false);
     setShowTransfersMenu(false);
-    setShowResourcesMenu(false);
     setShowCountryMenu(false);
     setShowCountryModal(false);
   };
@@ -271,25 +237,11 @@ export default function Navbar() {
     }
   };
 
-  const clearResourcesCloseTimer = () => {
-    if (resourcesCloseTimerRef.current !== null) {
-      window.clearTimeout(resourcesCloseTimerRef.current);
-      resourcesCloseTimerRef.current = null;
-    }
-  };
+
 
   const openTransfersMenu = () => {
     clearTransfersCloseTimer();
-    clearResourcesCloseTimer();
     setShowTransfersMenu(true);
-    setShowResourcesMenu(false);
-  };
-
-  const openResourcesMenu = () => {
-    clearTransfersCloseTimer();
-    clearResourcesCloseTimer();
-    setShowResourcesMenu(true);
-    setShowTransfersMenu(false);
   };
 
   const scheduleCloseTransfersMenu = () => {
@@ -299,18 +251,11 @@ export default function Navbar() {
     }, 120);
   };
 
-  const scheduleCloseResourcesMenu = () => {
-    clearResourcesCloseTimer();
-    resourcesCloseTimerRef.current = window.setTimeout(() => {
-      setShowResourcesMenu(false);
-    }, 120);
-  };
+
 
   const closeDropdownMenus = () => {
     clearTransfersCloseTimer();
-    clearResourcesCloseTimer();
     setShowTransfersMenu(false);
-    setShowResourcesMenu(false);
   };
 
   const renderGuestActions = (mobile = false) => (
@@ -571,54 +516,38 @@ export default function Navbar() {
               className="site-nav navbar-desktop-nav"
               aria-label={t('nav.primaryNavigation')}
             >
-              {marketingLinks.map((link) => {
-                const isResourcesLink = link.href === '/documentation';
-                const isActive = isResourcesLink
-                  ? false
-                  : link.href === '/'
-                    ? pathname === '/'
-                    : pathname === link.href || pathname?.startsWith(`${link.href}/`);
-                const isTransfersLink = link.href === '/';
+                {marketingLinks.map((link) => {
+                  const isActive =
+                    link.href === '/'
+                      ? pathname === '/'
+                      : pathname === link.href || pathname?.startsWith(`${link.href}/`);
+                  const isTransfersLink = link.href === '/';
 
-                if (isResourcesLink) {
                   return (
-                    <button
+                    <Link
                       key={link.href}
-                      type="button"
-                    className={`site-nav__link${showResourcesMenu ? ' is-open' : ''}`}
-                    aria-haspopup="true"
-                    aria-expanded={showResourcesMenu}
-                    onClick={() => {
-                      setShowResourcesMenu((current) => !current);
-                      setShowTransfersMenu(false);
-                    }}
-                    onMouseEnter={openResourcesMenu}
-                    onMouseLeave={scheduleCloseResourcesMenu}
-                  >
-                    {getNavLabel(link)}
-                  </button>
+                      href={link.href}
+                      className={`site-nav__link${isActive || (isTransfersLink && showTransfersMenu) ? ' is-active' : ''}`}
+                      onClick={(e) => {
+                        if (link.href === '#') {
+                          e.preventDefault();
+                          window.dispatchEvent(new CustomEvent('open-chat'));
+                        }
+                        closeMenus();
+                      }}
+                      onMouseEnter={() => {
+                        if (isTransfersLink) {
+                          openTransfersMenu();
+                        } else {
+                          closeDropdownMenus();
+                        }
+                      }}
+                      onMouseLeave={isTransfersLink ? scheduleCloseTransfersMenu : undefined}
+                    >
+                      {getNavLabel(link)}
+                    </Link>
                   );
-                }
-
-                return (
-                  <Link
-                    key={link.href}
-                  href={link.href}
-                  className={`site-nav__link${isActive || (isTransfersLink && showTransfersMenu) ? ' is-active' : ''}`}
-                  onClick={closeMenus}
-                  onMouseEnter={() => {
-                    if (isTransfersLink) {
-                      openTransfersMenu();
-                    } else {
-                      closeDropdownMenus();
-                    }
-                  }}
-                  onMouseLeave={isTransfersLink ? scheduleCloseTransfersMenu : undefined}
-                >
-                  {getNavLabel(link)}
-                </Link>
-                );
-              })}
+                })}
             </nav>
           </div>
 
@@ -702,54 +631,7 @@ export default function Navbar() {
           </section>
         ) : null}
 
-        {showResourcesMenu ? (
-          <section
-            className="site-resources-menu"
-            aria-label={t('nav.resourcesMenu')}
-            onMouseEnter={clearResourcesCloseTimer}
-            onMouseLeave={closeDropdownMenus}
-          >
-            <div className="site-resources-menu__inner">
-              <h2>{resourcesCopy.title}</h2>
 
-              <div className="site-resources-menu__grid">
-                <div>
-                  <h3>{resourcesCopy.toolsTitle}</h3>
-                  <ul>
-                    {resourcesCopy.tools.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h3>{resourcesCopy.companyTitle}</h3>
-                  <ul>
-                    {resourcesCopy.company.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h3>{resourcesCopy.partnershipsTitle}</h3>
-                  <ul>
-                    {resourcesCopy.partnerships.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="site-resources-menu__qr">
-                  <h3>{resourcesCopy.promoTitle}</h3>
-                  <div className="site-resources-menu__qr-box" aria-hidden="true">
-                    <Image src={qrImage} alt="" className="site-resources-menu__qr-image" sizes="104px" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        ) : null}
 
       </header>
 
@@ -770,7 +652,13 @@ export default function Navbar() {
                   key={`mobile-${link.href}`}
                   href={link.href}
                   className={`site-mobile-menu__link${isActive ? ' is-active' : ''}`}
-                  onClick={closeMenus}
+                  onClick={(e) => {
+                    if (link.href === '#') {
+                      e.preventDefault();
+                      window.dispatchEvent(new CustomEvent('open-chat'));
+                    }
+                    closeMenus();
+                  }}
                 >
                   <span>{getNavLabel(link)}</span>
                   <span className="site-mobile-menu__link-chevron" aria-hidden="true">

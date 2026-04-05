@@ -119,10 +119,9 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
         typeof updater === 'function'
           ? (updater as (value: SupportConversation[]) => SupportConversation[])(current)
           : updater;
-      const currentSnapshot = conversationsSnapshotRef.current || serializeConversations(current);
+      
       const nextSnapshot = serializeConversations(next);
-
-      if (nextSnapshot === currentSnapshot) {
+      if (nextSnapshot === conversationsSnapshotRef.current) {
         return current;
       }
 
@@ -280,16 +279,19 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
     if (typeof window === 'undefined' || !hasLoadedInitialConversationsRef.current) return;
 
     const nextSnapshot = serializeConversations(conversations);
-    conversationsSnapshotRef.current = nextSnapshot;
     if (nextSnapshot === persistedConversationsSnapshotRef.current) return;
 
     isSaving.current = true;
     persistedConversationsSnapshotRef.current = nextSnapshot;
+    conversationsSnapshotRef.current = nextSnapshot;
     saveSupportConversations(conversations);
-    scheduleTimeout(() => {
+    
+    // Reset saving flag after a short delay
+    const timerId = window.setTimeout(() => {
       isSaving.current = false;
-    }, 0);
-  }, [conversations, scheduleTimeout, serializeConversations]);
+    }, 100);
+    timeoutIdsRef.current.add(timerId);
+  }, [conversations, serializeConversations]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -300,6 +302,9 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
           return;
         }
         scheduleConversationsSync();
+        if (selectedIdRef.current) {
+          void swrActionsRef.current.refresh();
+        }
       }
       if (event.key === DEPOSIT_STORAGE_KEY) {
         scheduleConversationsSync(true);
@@ -309,6 +314,9 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
     const handleSupportUpdated = () => {
       if (isSaving.current) return;
       scheduleConversationsSync();
+      if (selectedIdRef.current) {
+        void swrActionsRef.current.refresh();
+      }
     };
 
     const handleDepositUpdated = () => {
@@ -872,6 +880,9 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
 
       syncConversationsFromStorage();
       syncPendingDepositCount();
+      if (targetConversation.id === selectedIdRef.current) {
+        await swrActionsRef.current.refresh();
+      }
       setDepositAmount('');
       setDepositModalConversationId(null);
       setDepositSuccess(true);
