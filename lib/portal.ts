@@ -43,6 +43,13 @@ export function getClientPortalRole(): FakeUserRole {
     return 'user';
   }
 
+  // Support Vercel/Production where port is 443/80
+  const searchParams = new URLSearchParams(window.location.search);
+  const portalParam = searchParams.get('portal');
+  if (portalParam === 'admin' || portalParam === 'supporter' || portalParam === 'user') {
+    return portalParam;
+  }
+
   return resolvePortalRoleFromPort(window.location.port);
 }
 
