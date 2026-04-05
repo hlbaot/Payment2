@@ -222,7 +222,12 @@ export default function AdminOrdersPage() {
   const [highlightedWalletId, setHighlightedWalletId] = useState<string | null>(null);
   const [editingWalletId, setEditingWalletId] = useState<string | null>(null);
   const [walletDraft, setWalletDraft] = useState('');
+  const [editingCommissionId, setEditingCommissionId] = useState<string | null>(null);
+  const [commissionDraft, setCommissionDraft] = useState('');
+  const [editingDetailId, setEditingDetailId] = useState<string | null>(null);
+  const [detailCommissionDraft, setDetailCommissionDraft] = useState('');
   const [stoppedItemIds, setStoppedItemIds] = useState<string[]>([]);
+  const [lockedEmails, setLockedEmails] = useState<string[]>([]);
 
   const parseCurrency = (value: string) => Number(value.replace(/[^0-9.]+/g, '')) || 0;
   const formatCurrency = (value: number) =>
@@ -349,6 +354,77 @@ export default function AdminOrdersPage() {
     setWalletDraft('');
   };
 
+  const handleStartCommissionEdit = (order: AdminOrder) => {
+    setEditingCommissionId(order.id);
+    setCommissionDraft(getDisplayedCommissionTotal(order).toString());
+  };
+
+  const handleCancelCommissionEdit = () => {
+    setEditingCommissionId(null);
+    setCommissionDraft('');
+  };
+
+  const handleSaveCommissionEdit = (orderId: string) => {
+    const newCommission = parseCurrency(commissionDraft);
+    
+    // To 'adjust' the commission, we'll replace the items with a single 'Adjustment' item
+    // or we could overwrite the 'commission' field in AdminOrder if it wasn't calculated.
+    // Since it's calculated from detailData, let's update detailData.
+    setDetailData((current) => ({
+      ...current,
+      [orderId]: [
+        {
+          counterName: 'Quản trị hệ thống',
+          items: [
+            { id: `ADJ-${Date.now()}`, orderLabel: 'Điều chỉnh hoa hồng', commission: formatCurrency(newCommission) }
+          ]
+        }
+      ]
+    }));
+
+    setEditingCommissionId(null);
+    setCommissionDraft('');
+  };
+
+  const handleStartDetailEdit = (item: CounterDetailItem) => {
+    setEditingDetailId(item.id);
+    setDetailCommissionDraft(parseCurrency(item.commission).toString());
+  };
+
+  const handleCancelDetailEdit = () => {
+    setEditingDetailId(null);
+    setDetailCommissionDraft('');
+  };
+
+  const handleSaveDetailEdit = (orderId: string, itemId: string) => {
+    const newCommissionValue = formatCurrency(parseCurrency(detailCommissionDraft));
+    
+    setDetailData((current) => ({
+      ...current,
+      [orderId]: (current[orderId] ?? []).map((counter) => ({
+        ...counter,
+        items: counter.items.map((item) => 
+          item.id === itemId ? { ...item, commission: newCommissionValue } : item
+        ),
+      })),
+    }));
+
+    setEditingDetailId(null);
+    setDetailCommissionDraft('');
+  };
+
+  const toggleLockEmail = (email: string) => {
+    setLockedEmails((prev) =>
+      prev.includes(email) ? prev.filter((e) => e !== email) : [...prev, email]
+    );
+  };
+
+  const deleteOrder = (orderId: string) => {
+    if (window.confirm(t('adminOrders.deleteConfirm') || 'Bạn có chắc chắn muốn xóa bản ghi này?')) {
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    }
+  };
+
   const activeOrderDetails = activeOrderId
     ? (detailData[activeOrderId] ?? []).filter((counter) => counter.items.length > 0)
     : [];
@@ -449,10 +525,61 @@ export default function AdminOrdersPage() {
               </thead>
               <tbody>
                 {filteredOrders.map((order) => (
-                  <tr key={order.id} className="border-t border-gray-100">
+                  <tr key={order.id} className={`border-t border-gray-100 transition-opacity ${lockedEmails.includes(order.email) ? 'opacity-40 grayscale-[0.5]' : ''}`}>
                     <td className="px-6 py-5">
-                      <p className="text-[16px] font-bold text-gray-900">{order.email}</p>
-                      <p className="mt-1 text-[12px] font-medium text-[#9AA7BD]">{order.user}</p>
+                      <div className="group/email relative flex items-start justify-between gap-4">
+                        <div>
+                          <p className={`text-[16px] font-bold ${lockedEmails.includes(order.email) ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                            {order.email}
+                          </p>
+                          <p className="mt-1 text-[12px] font-medium text-[#9AA7BD]">
+                            {order.user}
+                            {lockedEmails.includes(order.email) && (
+                              <span className="ml-2 inline-flex items-center rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-600">
+                                Đã khóa
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => toggleLockEmail(order.email)}
+                            className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all ${
+                              lockedEmails.includes(order.email)
+                                ? 'bg-amber-500 text-white shadow-sm'
+                                : 'bg-[#FFF4DB] text-[#D97706] hover:bg-amber-500 hover:text-white'
+                            }`}
+                            title={lockedEmails.includes(order.email) ? "Mở khóa" : "Khóa tài khoản"}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              {lockedEmails.includes(order.email) ? (
+                                <>
+                                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                  <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                                </>
+                              ) : (
+                                <>
+                                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                </>
+                              )}
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteOrder(order.id)}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FEE2E2] text-[#DC2626] transition-all hover:bg-[#DC2626] hover:text-white"
+                            title="Xóa tài khoản/đơn"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M3 6h18" />
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-5">
                       {editingWalletId === order.id ? (
@@ -505,8 +632,50 @@ export default function AdminOrdersPage() {
                         </button>
                       </div>
                     </td>
-                    <td className="px-6 py-5 text-[16px] font-black text-primary">
-                      {formatCurrency(getDisplayedCommissionTotal(order))}
+                    <td className="px-6 py-5">
+                      {editingCommissionId === order.id ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <input
+                            type="text"
+                            value={commissionDraft}
+                            onChange={(event) => setCommissionDraft(event.target.value)}
+                            className="h-[44px] w-[140px] rounded-xl border border-[#E5E7EB] bg-white px-4 text-center text-[16px] font-bold text-primary outline-none transition-colors focus:border-primary"
+                          />
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={handleCancelCommissionEdit}
+                              className="inline-flex min-h-[34px] items-center justify-center rounded-lg bg-[#F3F4F6] px-3 text-[11px] font-bold text-[#64748B] transition-colors hover:bg-[#E5E7EB]"
+                            >
+                              {t('common.cancel')}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveCommissionEdit(order.id)}
+                              className="inline-flex min-h-[34px] items-center justify-center rounded-lg bg-primary px-3 text-[11px] font-bold text-white transition-colors hover:opacity-90"
+                            >
+                              {t('common.save')}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="group relative flex items-center justify-center gap-2">
+                          <span className="text-[16px] font-black text-primary">
+                            {formatCurrency(getDisplayedCommissionTotal(order))}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleStartCommissionEdit(order)}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary transition-all hover:bg-primary hover:text-white shadow-sm"
+                            title="Điều chỉnh hoa hồng"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-5">
                       <span
@@ -636,7 +805,50 @@ export default function AdminOrdersPage() {
                           counter.items.map((item, itemIndex) => (
                             <div key={item.id} className="rounded-2xl bg-white p-4 shadow-sm">
                               <p className="text-[15px] font-bold text-gray-900">{`Đơn ${itemIndex + 1}`}</p>
-                              <p className="mt-2 text-[13px] font-semibold text-primary">{t('adminOrders.itemCommission')}: {item.commission}</p>
+                              
+                              <div className="mt-2 flex items-center gap-2">
+                                <span className="text-[13px] font-semibold text-gray-500">{t('adminOrders.itemCommission')}:</span>
+                                {editingDetailId === item.id ? (
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="text"
+                                      value={detailCommissionDraft}
+                                      onChange={(e) => setDetailCommissionDraft(e.target.value)}
+                                      className="h-[30px] w-[80px] rounded-lg border border-primary/30 px-2 text-[13px] font-bold text-primary outline-none focus:border-primary"
+                                      autoFocus
+                                    />
+                                    <button
+                                      onClick={() => handleSaveDetailEdit(activeOrderId, item.id)}
+                                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-white hover:opacity-90"
+                                    >
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      onClick={handleCancelDetailEdit}
+                                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-400 hover:bg-gray-200"
+                                    >
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => handleStartDetailEdit(item)}
+                                    className="flex items-center gap-1.5 transition-all hover:opacity-70"
+                                  >
+                                    <span className="text-[14px] font-black text-primary">{item.commission}</span>
+                                    <svg className="text-primary/40" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                    </svg>
+                                  </button>
+                                )}
+                              </div>
+
                               <div className="mt-4 flex flex-wrap gap-3">
                                 <button
                                   type="button"

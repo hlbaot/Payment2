@@ -15,7 +15,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     const userRole = sessionStorage.getItem('userRole');
 
     if (!isLoggedIn || userRole !== 'admin') {
-      router.replace('/');
+      router.replace('/login');
       return;
     }
 

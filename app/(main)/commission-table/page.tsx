@@ -1,18 +1,23 @@
+'use client';
+
 import InfoPage from '@/components/InfoPage';
+import { useI18n } from '@/components/I18nProvider';
 
 export default function CommissionTablePage() {
+  const { t } = useI18n();
+
   return (
     <InfoPage
-      eyebrow="Pricing"
-      title="Commission Table"
-      description="Commission guidance now has a dedicated route so users can continue from navigation without landing on a placeholder link."
+      eyebrow={t('commission.eyebrow')}
+      title={t('commission.title')}
+      description={t('commission.description')}
       highlights={[
-        'Counter cards already expose sample commission percentages for comparison.',
-        'Use the marketplace to evaluate counters by rate, minimum amount, and availability.',
-        'Continue into create-order once the pricing path is clear.',
+        t('commission.highlight1'),
+        t('commission.highlight2'),
+        t('commission.highlight3'),
       ]}
-      primaryAction={{ href: '/counter-market', label: 'Compare Counters' }}
-      secondaryAction={{ href: '/create-order', label: 'Create Order' }}
+      primaryAction={{ href: '/counter-market', label: t('commission.primaryAction') }}
+      secondaryAction={{ href: '/create-order', label: t('commission.secondaryAction') }}
     />
   );
 }

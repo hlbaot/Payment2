@@ -2,8 +2,10 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useI18n } from '@/components/I18nProvider';
+import { getClientPortalRole } from '@/lib/portal';
 import flashIcon from '@/images/flash.png';
 import lockIcon from '@/images/lock.png';
 import shieldIcon from '@/images/khien.png';
@@ -129,8 +131,26 @@ const countries = [
   { name: 'Bolivia', colors: ['#D94747', '#F5C948', '#2FAE63'] },
 ];
 
+
+
 export default function HomePage() {
+  const router = useRouter();
   const { t } = useI18n();
+
+  useEffect(() => {
+    const portalRole = getClientPortalRole();
+    if (portalRole === 'supporter' || portalRole === 'admin') {
+      const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+      if (!isLoggedIn) {
+        router.replace('/login');
+      } else if (portalRole === 'supporter') {
+        router.replace('/supporter');
+      } else {
+        router.replace('/admin');
+      }
+    }
+  }, [router]);
+
   const [activeSendTab, setActiveSendTab] = useState<'send' | 'receive'>('send');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<(typeof paymentMethods)[number]['key']>('Debit card');
   const [showPaymentModal, setShowPaymentModal] = useState(false);

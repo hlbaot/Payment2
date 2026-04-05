@@ -491,6 +491,12 @@ export default function ChatWidget({ prefillMessage }: { prefillMessage?: string
     }
   }, [messages.length, isOpen]);
 
+  useEffect(() => {
+    const handleOpenChatGlobal = () => setIsOpen(true);
+    window.addEventListener('open-chat', handleOpenChatGlobal);
+    return () => window.removeEventListener('open-chat', handleOpenChatGlobal);
+  }, []);
+
   // Retry helper: attempt fn up to maxRetries times with exponential backoff
   const withRetry = (fn: () => void, maxRetries = 3, delayMs = 600) => {
     let attempt = 0;
