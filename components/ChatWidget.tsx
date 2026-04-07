@@ -282,7 +282,18 @@ export default function ChatWidget({ prefillMessage }: { prefillMessage?: string
     void fetch('/api/socket').finally(() => {
       if (disposed) return;
 
-      socketIo = io({
+      const socketUrl =
+        typeof window !== 'undefined' &&
+        window.location.port &&
+        window.location.port !== '3000' &&
+        window.location.hostname !== 'localhost' &&
+        !window.location.hostname.includes('vercel.app')
+          ? `${window.location.protocol}//${window.location.hostname}:3000`
+          : typeof window !== 'undefined' && window.location.port && window.location.port !== '3000'
+            ? `http://localhost:3000` // fallback for localhost cross-port
+            : undefined;
+
+      socketIo = io(socketUrl, {
         path: '/api/socket',
         addTrailingSlash: false,
       });
@@ -310,7 +321,6 @@ export default function ChatWidget({ prefillMessage }: { prefillMessage?: string
       // Nhận tin nhắn mới từ Server (Push real-time)
       socketIo.on('receive-message', (data) => {
         if ((data.toEmail ?? '').trim().toLowerCase() === currentEmail && data.from === 'support') {
-          let appended = false;
           setMessagesIfChanged((prev) => {
             const nextMessage: Message = {
               id: `support-${Date.now()}`,
@@ -331,28 +341,24 @@ export default function ChatWidget({ prefillMessage }: { prefillMessage?: string
               return prev;
             }
 
-            appended = true;
             previousMessageCountRef.current = Math.max(previousMessageCountRef.current, prev.length + 1);
+            
+            scheduleTimeout(() => {
+              if (!isOpenRef.current) {
+                setUnread((current) => current + 1);
+              }
+              if (document.hidden && notificationPermissionRef.current === 'granted') {
+                new Notification('💬 Hỗ trợ viên trả lời', {
+                  body: data.text || 'Gửi ảnh đính kèm',
+                  icon: '/favicon.ico',
+                  tag: 'support-reply',
+                });
+              }
+              playNotificationTone(660, 0.1, 0.3);
+            }, 0);
+
             return [...prev, nextMessage];
           });
-
-          // Unread badge
-          if (appended && !isOpenRef.current) {
-            setUnread((current) => current + 1);
-          }
-
-          // Browser Notification when tab is hidden
-          if (appended && document.hidden && notificationPermissionRef.current === 'granted') {
-            new Notification('💬 Hỗ trợ viên trả lời', {
-              body: data.text || 'Gửi ảnh đính kèm',
-              icon: '/favicon.ico',
-              tag: 'support-reply',
-            });
-          }
-
-          if (appended) {
-            playNotificationTone(660, 0.1, 0.3);
-          }
         }
       });
 
@@ -380,7 +386,7 @@ export default function ChatWidget({ prefillMessage }: { prefillMessage?: string
         socketIdentityRef.current = '';
       }
     };
-  }, [contactEmail, playNotificationTone, sessionUserEmail, setMessagesIfChanged]);
+  }, [contactEmail, playNotificationTone, sessionUserEmail, setMessagesIfChanged, scheduleTimeout]);
 
   // Xử lý kiện Gửi Trạng thái đang nhập báo lên Server
   useEffect(() => {
@@ -524,6 +530,7 @@ export default function ChatWidget({ prefillMessage }: { prefillMessage?: string
     }
     const currentEmail = activeEmailRef.current;
     
+    
     const tempId = Date.now();
     const nextTime = nowTime();
 
@@ -554,7 +561,7 @@ export default function ChatWidget({ prefillMessage }: { prefillMessage?: string
           }
         });
       };
-      scheduleTimeout(sendWithRetry, 500);
+      scheduleTimeout(sendWithRetry, 50);
       return;
     }
 

@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { I18nProvider } from "@/components/I18nProvider";
+import { I18nProvider, useI18n } from "@/components/I18nProvider";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -12,11 +12,8 @@ const ChatWidget = dynamic(() => import('@/components/ChatWidget'), {
   ssr: false,
 });
 
-export default function MainLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+function MainLayoutInner({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
   const pathname = usePathname() ?? '';
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -60,7 +57,7 @@ export default function MainLayout({
 
   if (requiresLogin && !isAuthorized) {
     return (
-      <I18nProvider>
+      <>
         <Navbar />
         <main
           className="flex min-h-[calc(100vh-var(--header-height))] items-center justify-center px-6"
@@ -73,21 +70,33 @@ export default function MainLayout({
                 <path d="M2.1 11a10 10 0 1 0 3-6.7L8 8" />
               </svg>
             </div>
-            <p className="text-[15px] font-semibold text-gray-700">Checking your session...</p>
+            <p className="text-[15px] font-semibold text-gray-700">{t('layout.checkingSession')}</p>
           </div>
         </main>
-      </I18nProvider>
+      </>
     );
   }
 
   return (
-    <I18nProvider>
+    <>
       <Navbar />
       <main style={{ marginTop: shouldUseOwnHeaderOffset ? 0 : 'var(--header-height)' }}>
         {children}
       </main>
       {shouldHideFooter ? null : <Footer />}
       <ChatWidget />
+    </>
+  );
+}
+
+export default function MainLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <I18nProvider>
+      <MainLayoutInner>{children}</MainLayoutInner>
     </I18nProvider>
   );
 }

@@ -341,7 +341,7 @@ export default function Navbar() {
       <span className="mr-3 flex h-4 w-6 items-center overflow-hidden rounded-[2px]" aria-hidden="true">
         <FlagIcon code={selectedCountry.code} />
       </span>
-      <span className="flex-1 text-left">{locale === 'vi' ? 'Quốc gia' : 'Country'}</span>
+      <span className="flex-1 text-left">{t('nav.country')}</span>
       <span className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#94A3B8]">
         {selectedCountry.code}
       </span>
@@ -457,7 +457,7 @@ export default function Navbar() {
           <div className="site-country-modal__panel">
             <div className="site-country-modal__header">
               <div>
-                <p className="site-country-modal__eyebrow">{locale === 'vi' ? 'Quốc gia' : 'Country'}</p>
+                <p className="site-country-modal__eyebrow">{t('nav.country')}</p>
                 <h3 className="site-country-modal__title">{t('nav.chooseCountry')}</h3>
               </div>
               <button

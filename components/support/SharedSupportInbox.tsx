@@ -198,7 +198,6 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
   // SWR: paginated messages for selected conversation
   const {
     messages: pagedMessages,
-    isLoading: isLoadingMessages,
     isLoadingOlder,
     hasMore: hasOlderMessages,
     loadOlder,
@@ -409,14 +408,27 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
     let removeListeners = () => undefined;
 
     const connectSocket = () => {
-      socketIo = io({
+      const socketUrl =
+        typeof window !== 'undefined' &&
+        window.location.port &&
+        window.location.port !== '3000' &&
+        window.location.hostname !== 'localhost' &&
+        !window.location.hostname.includes('vercel.app')
+          ? `${window.location.protocol}//${window.location.hostname}:3000`
+          : typeof window !== 'undefined' && window.location.port && window.location.port !== '3000'
+            ? `http://localhost:3000`
+            : undefined;
+
+      socketIo = io(socketUrl, {
         path: '/api/socket',
         addTrailingSlash: false,
       });
       socketRef.current = socketIo;
 
       const handleConnect = () => {
-        socketIo?.emit('user-online', { email: 'supporter@domain.com', role: 'supporter' });
+        const role = sessionStorage.getItem('userRole') ?? 'supporter';
+        const email = sessionStorage.getItem('userEmail') ?? 'supporter@domain.com';
+        socketIo?.emit('user-online', { email, role });
       };
 
       const handleUserStatus = (data: { role?: string; email?: string; status?: string }) => {
@@ -453,14 +465,16 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
           return;
         }
 
-        let appendedMessage: SupportConversation['messages'][number] | null = null;
-        let shouldAppendToSelectedPanel = false;
-
         setConversationsSafely((current) => {
           const targetConversation = current.find(
             (conversation) => conversation.userEmail.toLowerCase() === normalizedEmail
           );
           if (!targetConversation) {
+            // New conversation from unknown user - sync from storage to get it setup initially
+            scheduleTimeout(() => {
+                void swrActionsRef.current.refresh();
+                scheduleConversationsSync();
+            }, 0);
             return current;
           }
 
@@ -480,7 +494,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
           };
 
           const lastMessage = targetConversation.messages[targetConversation.messages.length - 1];
-          shouldAppendToSelectedPanel = targetConversation.id === selectedIdRef.current;
+          const shouldAppendToSelectedPanel = targetConversation.id === selectedIdRef.current;
           const isDuplicate =
             lastMessage?.sender === incomingMessage.sender &&
             lastMessage?.text === incomingMessage.text &&
@@ -491,13 +505,31 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
             return current;
           }
 
-          appendedMessage = incomingMessage;
+          scheduleTimeout(() => {
+            if (shouldAppendToSelectedPanel) {
+              swrActionsRef.current.appendMessage(incomingMessage);
+            }
+            if (
+              incomingSender === 'user' &&
+              document.hidden &&
+              notificationPermissionRef.current === 'granted'
+            ) {
+              new Notification('💬 Tin nhắn mới', {
+                body: data.text || 'Khách hàng vừa gửi ảnh đính kèm',
+                icon: '/favicon.ico',
+                tag: 'new-chat-message',
+              });
+            }
+            if (incomingSender === 'user') {
+              playNotificationTone(880, 0.12, 0.35);
+            }
+          }, 0);
 
           return current.map((conversation) =>
             conversation.id === targetConversation.id
               ? {
                   ...conversation,
-                  preview: incomingMessage.text || 'KhÃ¡ch hÃ ng vá»«a gá»­i áº£nh Ä‘Ã­nh kÃ¨m',
+                  preview: incomingMessage.text || 'Khách hàng vừa gửi ảnh đính kèm',
                   time: incomingMessage.time,
                   status:
                     incomingSender === 'user'
@@ -505,38 +537,12 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
                         ? 'Open'
                         : 'Unread'
                       : 'Open',
+                  online: true,
                   messages: [...conversation.messages, incomingMessage],
                 }
               : conversation
           );
         });
-
-        if (appendedMessage && shouldAppendToSelectedPanel) {
-          swrActionsRef.current.appendMessage(appendedMessage);
-        }
-
-        if (!appendedMessage) {
-          if (shouldAppendToSelectedPanel) {
-            swrActionsRef.current.refresh();
-          }
-          scheduleConversationsSync();
-        }
-
-        if (
-          incomingSender === 'user' &&
-          document.hidden &&
-          notificationPermissionRef.current === 'granted'
-        ) {
-          new Notification('ðŸ’¬ Tin nháº¯n má»›i', {
-            body: data.text || 'KhÃ¡ch hÃ ng vá»«a gá»­i áº£nh Ä‘Ã­nh kÃ¨m',
-            icon: '/favicon.ico',
-            tag: 'new-chat-message',
-          });
-        }
-
-        if (incomingSender === 'user') {
-          playNotificationTone(880, 0.12, 0.35);
-        }
       };
 
       const handleUserTyping = (data: { from?: string; toEmail?: string }) => {
@@ -591,7 +597,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
         socketRef.current = null;
       }
     };
-  }, [playNotificationTone, scheduleConversationsSync, setConversationsSafely]);
+  }, [playNotificationTone, scheduleConversationsSync, setConversationsSafely, scheduleTimeout]);
 
   const filteredConversations = useMemo(() => {
     return conversations.filter((conversation) => {
@@ -967,8 +973,8 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
                 </svg>
               </div>
               <div>
-                <p className="text-[14px] font-bold text-gray-700">Không thể tải hội thoại</p>
-                <p className="mt-1 text-[12px] text-gray-400">Kiểm tra kết nối và thử lại</p>
+                <p className="text-[14px] font-bold text-gray-700">{t('support.errorLoading')}</p>
+                <p className="mt-1 text-[12px] text-gray-400">{t('support.errorDesc')}</p>
               </div>
               <button
                 type="button"
@@ -999,7 +1005,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
                   <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
                   <path d="M8 16H3v5" />
                 </svg>
-                Thử lại
+                {t('support.retryLoad')}
               </button>
             </div>
           )}
@@ -1012,7 +1018,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
               </div>
-              <p className="text-[13px] font-semibold text-gray-400">Không tìm thấy hội thoại</p>
+              <p className="text-[13px] font-semibold text-gray-400">{t('support.noConversations')}</p>
             </div>
           )}
 
@@ -1115,7 +1121,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
                     }}
                     className="inline-flex min-h-[34px] items-center justify-center rounded-full bg-[#FFF3E8] px-4 text-[11px] font-black uppercase tracking-[0.16em] text-primary transition-colors hover:bg-[#FFE8D6]"
                   >
-                    Lên đơn
+                    {t('support.placeOrder')}
                   </button>
                 ) : null}
               </div>
@@ -1159,7 +1165,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#D1D5DB] [animation-delay:0ms]" />
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#D1D5DB] [animation-delay:120ms]" />
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#D1D5DB] [animation-delay:240ms]" />
-              <span>Đang tải tin nhắn cũ...</span>
+              <span>{t('support.loadingOlder')}</span>
             </div>
           )}
 
@@ -1169,7 +1175,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
               onClick={loadOlder}
               className="mb-4 w-full rounded-xl border border-gray-100 bg-[#F8FAFD] py-2 text-[12px] font-semibold text-[#9AA7BD] hover:bg-gray-50 transition-colors"
             >
-              ↑ Tải tin nhắn cũ hơn
+              {t('support.loadOlderBtn')}
             </button>
           )}
 
@@ -1178,7 +1184,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
           </div>
 
           {/* Messages loading skeleton when first load */}
-          {isLoadingMessages && pagedMessages.length === 0 && (
+          {isLoadingConversations && selectedConversation.messages.length === 0 && (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className={`flex items-end gap-3 ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
@@ -1190,7 +1196,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
           )}
 
           <div className="space-y-6">
-            {(pagedMessages.length > 0 ? pagedMessages : selectedConversation.messages).map((message) => (
+            {selectedConversation.messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex items-end gap-3 ${
@@ -1223,7 +1229,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
 
                 {message.sender === 'supporter' ? (
                   <div className="text-[12px] font-medium text-[#9AA7BD] flex items-center gap-1 shrink-0">
-                    {message.time} {message.status === 'sending' ? '• Đang gửi...' : message.status === 'sent' ? '• Đã gửi' : ''}
+                {message.time} {message.status === 'sending' ? `• ${t('support.sending')}` : message.status === 'sent' ? `• ${t('support.sent')}` : ''}
                   </div>
                 ) : null}
               </div>
@@ -1319,19 +1325,19 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
               href="/admin/deposits"
               className="mt-6 inline-flex min-h-[40px] w-full items-center justify-center rounded-2xl border border-[#FAD4B8] bg-[#FFF8F2] px-4 text-[12px] font-black uppercase tracking-[0.16em] text-primary transition-colors hover:bg-[#FFF3E8]"
             >
-              Open Deposit Queue
+              {t('support.openDepositQueue')}
             </Link>
           ) : null}
 
           <div className="mt-8">
             <p className="mb-4 text-[11px] font-black uppercase tracking-[0.22em] text-[#A0AEC0]">
-              Create Deposit Order
+              {t('support.createDeposit')}
             </p>
             <div className="overflow-hidden rounded-[28px] border border-[#F6D9C4] bg-gradient-to-br from-[#FFF8F2] via-white to-[#FFF4EA] shadow-[0_18px_40px_rgba(255,102,0,0.06)]">
               <div className="space-y-5 px-5 py-5">
                 <div className="rounded-[22px] bg-white px-4 py-4 shadow-sm">
                   <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">
-                    Current Wallet Balance
+                    {t('support.currentWalletBalance')}
                   </p>
                   <h3 className="mt-2 text-[22px] font-black tracking-tight text-gray-900">
                     {formatUsd(getWalletBalance(selectedConversation.userEmail))}
@@ -1346,7 +1352,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
 
                 <label className="block">
                   <span className="text-[11px] font-black uppercase tracking-[0.16em] text-[#94A3B8]">
-                    Amount To Add Into Wallet
+                    {t('support.amountToAdd')}
                   </span>
                   <input
                     type="text"
@@ -1363,17 +1369,17 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
                   disabled={Number(depositAmount.replace(/[^0-9.]/g, '')) <= 0 || isSubmittingDeposit}
                   className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-[22px] bg-[#FF7A1A] px-4 text-[13px] font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_34px_rgba(255,122,26,0.28)] transition-all hover:-translate-y-0.5 hover:bg-[#FF8C38] disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-[#FFC38F] disabled:text-white disabled:shadow-[0_12px_24px_rgba(255,122,26,0.16)]"
                 >
-                  {isSubmittingDeposit ? (
+                    {isSubmittingDeposit ? (
                     <>
                       <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                      Đang xử lý...
+                      {t('support.processing')}
                     </>
                   ) : depositSuccess ? (
                     <>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
-                      Thành công!
+                      {t('support.success')}
                     </>
-                  ) : 'Submit'}
+                  ) : t('support.submit')}
                 </button>
               </div>
             </div>
@@ -1425,7 +1431,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
                   {isSavingNote ? (
                     <>
                       <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
-                      Đang lưu...
+                      {t('support.savingNote')}
                     </>
                   ) : t('supporter.saveNote')}
                 </button>
@@ -1478,7 +1484,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#94A3B8]">
-                  Tạo đơn cộng ví
+                  {t('support.createWalletDeposit')}
                 </p>
                 <h3 className="mt-2 text-[24px] font-black tracking-tight text-gray-900">
                   {activeDepositConversation.userName}
@@ -1505,7 +1511,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
 
             <div className="mt-6 rounded-[22px] bg-[#FFF8F2] px-4 py-4">
               <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">
-                Số dư ví hiện tại
+                {t('support.currentBalance')}
               </p>
               <p className="mt-2 text-[26px] font-black tracking-tight text-gray-900">
                 {formatUsd(getWalletBalance(activeDepositConversation.userEmail))}
@@ -1514,7 +1520,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
 
             <label className="mt-5 block">
               <span className="text-[11px] font-black uppercase tracking-[0.16em] text-[#94A3B8]">
-                Số tiền cộng thêm
+                {t('support.amountToCredit')}
               </span>
               <input
                 type="text"
@@ -1534,7 +1540,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
                 }}
                 className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-[20px] bg-[#F3F4F6] px-4 text-[13px] font-bold text-[#64748B] transition-colors hover:bg-[#E5E7EB]"
               >
-                Hủy
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -1542,7 +1548,7 @@ export default function SharedSupportInbox({ mode = 'full' }: SharedSupportInbox
                 disabled={Number(depositAmount.replace(/[^0-9.]/g, '')) <= 0}
                 className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-[20px] bg-[#FF7A1A] px-4 text-[13px] font-black uppercase tracking-[0.16em] text-white shadow-[0_18px_34px_rgba(255,122,26,0.24)] transition-all hover:-translate-y-0.5 hover:bg-[#FF8C38] disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-[#FFC38F] disabled:shadow-none"
               >
-                Submit
+                {t('support.submit')}
               </button>
             </div>
           </div>

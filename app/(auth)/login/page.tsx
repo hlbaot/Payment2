@@ -241,13 +241,7 @@ export default function LoginPage() {
                   ))}
                 </div>
 
-                <div className="mt-8 flex items-center justify-center gap-4 text-[13px] font-semibold text-[#8EA0BC] sm:mt-10">
-                  <Link href="/login?portal=user" className={portalRole === 'user' ? 'text-primary' : 'hover:text-[#6A7690]'}>User</Link>
-                  <span className="h-1 w-1 rounded-full bg-[#D7DCE5]" />
-                  <Link href="/login?portal=supporter" className={portalRole === 'supporter' ? 'text-primary' : 'hover:text-[#6A7690]'}>Supporter</Link>
-                  <span className="h-1 w-1 rounded-full bg-[#D7DCE5]" />
-                  <Link href="/login?portal=admin" className={portalRole === 'admin' ? 'text-primary' : 'hover:text-[#6A7690]'}>Admin</Link>
-                </div>
+
 
                 <div className="mt-8 flex justify-end sm:mt-10">
                   <button
