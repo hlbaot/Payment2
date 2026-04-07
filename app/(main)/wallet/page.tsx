@@ -82,6 +82,17 @@ export default function WalletPage() {
               <p className="mt-3 text-[15px] font-bold text-[#86EFAC]">{t('user.wallet.dailyProfit')}</p>
               <p className="mt-5 text-[13px] font-medium text-white/80">{currentUserEmail}</p>
 
+              <div className="mt-8 grid grid-cols-2 gap-4 pt-8 border-t border-white/10">
+                 <button className="h-[52px] bg-white text-primary rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2.5 hover:bg-orange-50 transition-all active:scale-95" onClick={() => window.dispatchEvent(new CustomEvent('open-chat'))}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+                    {t('user.wallet.deposit')}
+                 </button>
+                 <button className="h-[52px] bg-white/10 text-white border border-white/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 hover:bg-white/20 transition-all active:scale-95" onClick={() => window.dispatchEvent(new CustomEvent('open-chat'))}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M7 17L17 7"/><polyline points="10 7 17 7 17 14"/></svg>
+                    {t('user.wallet.withdraw')}
+                 </button>
+              </div>
+
               <div className="mt-8 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-[24px] bg-white/12 p-5 backdrop-blur-sm">
                   <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/70">{t('user.wallet.pendingDeposits')}</p>

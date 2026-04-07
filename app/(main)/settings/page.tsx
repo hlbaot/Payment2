@@ -112,17 +112,6 @@ export default function SettingsPage() {
                          Lợi nhuận mỗi ngày: 20$
                        </p>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4 pt-10 border-t border-white/10">
-                       <button className="h-[52px] bg-white text-primary rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2.5 hover:bg-orange-50 transition-all active:scale-95">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
-                          Deposit
-                       </button>
-                       <button className="h-[52px] bg-white/10 text-white border border-white/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 hover:bg-white/20 transition-all active:scale-95">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M7 17L17 7"/><polyline points="10 7 17 7 17 14"/></svg>
-                          Withdraw
-                       </button>
-                    </div>
                  </div>
               </div>
            </div>
