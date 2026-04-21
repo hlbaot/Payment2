@@ -213,6 +213,7 @@
   "chat.auto.order": "Tôi thấy bạn đang hỏi về đơn hàng. Bạn vui lòng cung cấp mã đơn (ví dụ: #SW-XXXXXX) để tôi kiểm tra chi tiết.",
   "chat.auto.payment": "Tôi hiểu bạn đang gặp vấn đề thanh toán. Vui lòng cho tôi ít phút để kiểm tra trạng thái giao dịch.",
   "chat.auto.hello": "Xin chào! Chào mừng bạn đến Ria Support. Tôi có thể giúp gì cho bạn?",
+  "chat.auto.exchange": "Cảm ơn bạn! Chúng tôi đã nhận được yêu cầu quy đổi của bạn. Nhân viên hỗ trợ sẽ xác nhận tỷ giá và xử lý lệnh trong thời gian sớm nhất (thường dưới 5 phút). Vui lòng chờ!",
   "chat.email.title": "Nhập email trước khi chat",
   "chat.email.desc": "Vui lòng để lại email để hỗ trợ có thể liên hệ nếu kết nối bị gián đoạn.",
   "chat.email.inputLabel": "Email liên hệ",
