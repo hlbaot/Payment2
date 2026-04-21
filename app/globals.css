@@ -1618,6 +1618,174 @@ input:focus-visible {
   font-weight: 700;
 }
 
+/* ── Editable send-amount input ─────────────────────────────── */
+.transfer-field__amount--input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+  border: none;
+  outline: none;
+  background: transparent;
+  text-align: right;
+  width: 50%;
+  padding: 0;
+  font-family: inherit;
+  color: #152238;
+  font-size: clamp(2rem, 1.9vw, 2.15rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.transfer-field__amount--input::-webkit-outer-spin-button,
+.transfer-field__amount--input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ── Clickable currency-selector button ─────────────────────── */
+.transfer-field__currency--btn {
+  background: none;
+  border: none;
+  padding: 2px 6px 2px 2px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 120ms;
+}
+
+.transfer-field__currency--btn:hover {
+  background: #f3f4f6;
+}
+
+/* ── Loading pulse ──────────────────────────────────────────── */
+.tc-rate-loading {
+  display: inline-block;
+  color: #9ca3af;
+  animation: tc-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes tc-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+/* ── Currency Picker Modal ──────────────────────────────────── */
+.currency-picker-modal {
+  max-height: 82dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.currency-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.currency-picker-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: #111827;
+}
+
+.currency-picker-search input::placeholder {
+  color: #9ca3af;
+}
+
+.currency-picker-list {
+  overflow-y: auto;
+  flex: 1;
+  overscroll-behavior: contain;
+}
+
+.currency-picker-error {
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  color: #b91c1c;
+  background: #fef2f2;
+  border-bottom: 1px solid #fee2e2;
+  flex-shrink: 0;
+}
+
+.currency-picker-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+/* ── Currency option rows ───────────────────────────────────── */
+.currency-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 120ms;
+}
+
+.currency-option:hover {
+  background: #f9fafb;
+}
+
+.currency-option.is-selected {
+  background: #fff7f0;
+}
+
+.currency-option__flag {
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.currency-option__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.currency-option__code {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.currency-option__name {
+  font-size: 0.78rem;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.currency-option__rate {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-right: 4px;
+}
+
 .transfer-card__divider {
   height: 1px;
   margin: 12px 0 10px;

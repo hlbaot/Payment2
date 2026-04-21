@@ -23,9 +23,33 @@ const SUPPORT_STORAGE_KEY = 'shared-support-conversations';
 
 function getAutoReply(msg: string, t: (key: string) => string): string {
   const lower = msg.toLowerCase();
-  if (lower.includes('order') || lower.includes('#sw')) return t('chat.auto.order');
-  if (lower.includes('payment') || lower.includes('transfer') || lower.includes('money')) return t('chat.auto.payment');
-  if (lower === 'hi' || lower === 'hello') return t('chat.auto.hello');
+
+  // Exchange order command (from homepage "Bat dau" button)
+  if (lower.includes('lenh quy doi') || lower.includes('l\u1ec7nh quy \u0111\u1ed5i') || lower.includes('exchange order')) {
+    return t('chat.auto.exchange');
+  }
+
+  // Order / don hang
+  if (lower.includes('order') || lower.includes('#sw') ||
+      lower.includes('\u0111\u01a1n h\u00e0ng') || lower.includes('don hang') ||
+      lower.includes('m\u00e3 \u0111\u01a1n') || lower.includes('theo d\u00f5i') || lower.includes('tra c\u1ee9u')) {
+    return t('chat.auto.order');
+  }
+
+  // Payment / chuyen tien / giao dich
+  if (lower.includes('payment') || lower.includes('transfer') || lower.includes('money') ||
+      lower.includes('thanh to\u00e1n') || lower.includes('chuy\u1ec3n ti\u1ec1n') ||
+      lower.includes('giao d\u1ecbch') || lower.includes('n\u1ea1p ti\u1ec1n') ||
+      lower.includes('quy \u0111\u1ed5i') || lower.includes('t\u1ef7 gi\u00e1')) {
+    return t('chat.auto.payment');
+  }
+
+  // Greeting / chao hoi
+  if (lower === 'hi' || lower === 'hello' || lower === 'xin ch\u00e0o' || lower === 'ch\u00e0o' ||
+      lower.startsWith('ch\u00e0o') || lower.startsWith('xin ch\u00e0o')) {
+    return t('chat.auto.hello');
+  }
+
   return t('chat.auto.default');
 }
 
@@ -498,7 +522,18 @@ export default function ChatWidget({ prefillMessage }: { prefillMessage?: string
   }, [messages.length, isOpen]);
 
   useEffect(() => {
-    const handleOpenChatGlobal = () => setIsOpen(true);
+    const handleOpenChatGlobal = (e: Event) => {
+      const detail = (e as CustomEvent<{ message?: string }>).detail;
+      setIsOpen(true);
+      setUnread(0);
+      if (detail?.message) {
+        // Small delay so the panel renders before we focus
+        window.setTimeout(() => {
+          setInput(detail.message!);
+          inputRef.current?.focus();
+        }, 120);
+      }
+    };
     window.addEventListener('open-chat', handleOpenChatGlobal);
     return () => window.removeEventListener('open-chat', handleOpenChatGlobal);
   }, []);

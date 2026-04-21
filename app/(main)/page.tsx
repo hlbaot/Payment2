@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/components/I18nProvider';
 import { getClientPortalRole } from '@/lib/portal';
@@ -64,18 +64,61 @@ const sendWays = [
   },
 ];
 
-const paymentMethods = [
-  { key: 'Bank', keyLabel: 'home.payment.bank', icon: 'bank' },
-  { key: 'Credit card', keyLabel: 'home.payment.creditCard', icon: 'card' },
-  { key: 'Debit card', keyLabel: 'home.payment.debitCard', icon: 'card' },
-  { key: 'Cash', keyLabel: 'home.payment.cash', icon: 'cash' },
-] as const;
+// Currency code → ISO 3166-1 alpha-2 country code for flag images
+const CURRENCY_FLAGS: Record<string, string> = {
+  AED: 'ae', AFN: 'af', ALL: 'al', AMD: 'am', ANG: 'cw', AOA: 'ao',
+  ARS: 'ar', AUD: 'au', AWG: 'aw', AZN: 'az', BAM: 'ba', BBD: 'bb',
+  BDT: 'bd', BGN: 'bg', BHD: 'bh', BMD: 'bm', BND: 'bn', BOB: 'bo',
+  BRL: 'br', BSD: 'bs', BTN: 'bt', BWP: 'bw', BYN: 'by', BZD: 'bz',
+  CAD: 'ca', CDF: 'cd', CHF: 'ch', CLP: 'cl', CNY: 'cn', COP: 'co',
+  CRC: 'cr', CUP: 'cu', CVE: 'cv', CZK: 'cz', DJF: 'dj', DKK: 'dk',
+  DOP: 'do', DZD: 'dz', EGP: 'eg', ETB: 'et', EUR: 'eu', FJD: 'fj',
+  GBP: 'gb', GEL: 'ge', GHS: 'gh', GMD: 'gm', GTQ: 'gt', GYD: 'gy',
+  HKD: 'hk', HNL: 'hn', HUF: 'hu', IDR: 'id', ILS: 'il', INR: 'in',
+  IQD: 'iq', ISK: 'is', JMD: 'jm', JOD: 'jo', JPY: 'jp', KES: 'ke',
+  KGS: 'kg', KHR: 'kh', KRW: 'kr', KWD: 'kw', KYD: 'ky', KZT: 'kz',
+  LAK: 'la', LBP: 'lb', LKR: 'lk', LRD: 'lr', LSL: 'ls', LYD: 'ly',
+  MAD: 'ma', MDL: 'md', MGA: 'mg', MKD: 'mk', MMK: 'mm', MNT: 'mn',
+  MOP: 'mo', MRU: 'mr', MUR: 'mu', MVR: 'mv', MWK: 'mw', MXN: 'mx',
+  MYR: 'my', MZN: 'mz', NAD: 'na', NGN: 'ng', NIO: 'ni', NOK: 'no',
+  NPR: 'np', NZD: 'nz', OMR: 'om', PAB: 'pa', PEN: 'pe', PGK: 'pg',
+  PHP: 'ph', PKR: 'pk', PLN: 'pl', PYG: 'py', QAR: 'qa', RON: 'ro',
+  RSD: 'rs', RUB: 'ru', RWF: 'rw', SAR: 'sa', SBD: 'sb', SCR: 'sc',
+  SDG: 'sd', SEK: 'se', SGD: 'sg', SLL: 'sl', SOS: 'so', SRD: 'sr',
+  STN: 'st', SVC: 'sv', SYP: 'sy', SZL: 'sz', THB: 'th', TJS: 'tj',
+  TMT: 'tm', TND: 'tn', TOP: 'to', TRY: 'tr', TTD: 'tt', TWD: 'tw',
+  TZS: 'tz', UAH: 'ua', UGX: 'ug', USD: 'us', UYU: 'uy', UZS: 'uz',
+  VES: 've', VND: 'vn', VUV: 'vu', WST: 'ws', XAF: 'cm', XCD: 'ag',
+  XOF: 'sn', XPF: 'pf', YER: 'ye', ZAR: 'za', ZMW: 'zm', ZWL: 'zw',
+};
 
-const deliveryMethods = [
-  { key: 'Cash pickup', keyLabel: 'home.delivery.cashPickup', icon: 'wallet', rate: '1 USD = 18.011760 MXN' },
-  { key: 'Bank', keyLabel: 'home.delivery.bank', icon: 'wallet', rate: '1 USD = 18.011760 MXN' },
-  { key: 'Mobile wallet', keyLabel: 'home.delivery.mobileWallet', icon: 'wallet', rate: '1 USD = 18.011760 MXN' },
-] as const;
+const PRIORITY_CURRENCIES = [
+  'MXN', 'EUR', 'GBP', 'JPY', 'CNY', 'CAD', 'AUD', 'INR', 'BRL',
+  'VND', 'PHP', 'THB', 'SGD', 'HKD', 'KRW', 'TRY', 'ZAR', 'IDR',
+];
+
+function getCurrencyName(code: string): string {
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'currency' }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
+
+function CurrencyFlag({ code, size = 22 }: { code: string; size?: number }) {
+  const cc = CURRENCY_FLAGS[code];
+  if (!cc) return <span style={{ fontSize: size * 0.8, lineHeight: 1 }}>💱</span>;
+  return (
+    <img
+      src={`https://flagcdn.com/${size}x${Math.round(size * 0.75)}/${cc}.webp`}
+      alt={code}
+      width={size}
+      height={Math.round(size * 0.75)}
+      style={{ borderRadius: 3, objectFit: 'cover', flexShrink: 0, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.08)' }}
+      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+    />
+  );
+}
 
 const receiveWays = [
   {
@@ -151,16 +194,106 @@ export default function HomePage() {
     }
   }, [router]);
 
+  // Fetch all exchange rates from USD once on mount
+  useEffect(() => {
+    let cancelled = false;
+    const fetchRates = async () => {
+      try {
+        setIsLoadingRates(true);
+        setRateError(false);
+        const res = await fetch('https://open.er-api.com/v6/latest/USD');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (cancelled) return;
+        if (data.result === 'success' && data.rates) {
+          setRates(data.rates);
+        } else {
+          throw new Error('Invalid API response');
+        }
+      } catch {
+        if (!cancelled) setRateError(true);
+      } finally {
+        if (!cancelled) setIsLoadingRates(false);
+      }
+    };
+    fetchRates();
+    return () => { cancelled = true; };
+  }, []);
+
   const [activeSendTab, setActiveSendTab] = useState<'send' | 'receive'>('send');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<(typeof paymentMethods)[number]['key']>('Debit card');
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedDeliveryMethod, setSelectedDeliveryMethod] = useState<(typeof deliveryMethods)[number]['key']>('Bank');
-  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+
+  // --- Currency Exchange State ---
+  const [sendAmount, setSendAmount] = useState('1000');
+  const [sendCurrency, setSendCurrency] = useState('USD');
+  const [receiveCurrency, setReceiveCurrency] = useState('MXN');
+  const [rates, setRates] = useState<Record<string, number>>({});
+  const [isLoadingRates, setIsLoadingRates] = useState(true);
+  const [rateError, setRateError] = useState(false);
+  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
+  const [currencyPickerMode, setCurrencyPickerMode] = useState<'send' | 'receive'>('receive');
+  const [currencySearch, setCurrencySearch] = useState('');
+
   const activeWays = activeSendTab === 'send' ? sendWays : receiveWays;
   const sendSectionTitle =
     activeSendTab === 'send'
       ? t('home.sendSection.sendTitle')
       : t('home.sendSection.receiveTitle');
+
+  // Computed: converted amount  (any base → any target via USD pivot)
+  const convertedAmount = useMemo(() => {
+    const num = parseFloat(sendAmount);
+    if (!num || isNaN(num)) return '\u2014';
+    const sendRate = rates[sendCurrency];    // sendCurrency per 1 USD
+    const receiveRate = rates[receiveCurrency]; // receiveCurrency per 1 USD
+    if (!sendRate || !receiveRate) return '\u2014';
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(num * receiveRate / sendRate);
+  }, [sendAmount, sendCurrency, receiveCurrency, rates]);
+
+  const currentRate =
+    rates[sendCurrency] && rates[receiveCurrency]
+      ? rates[receiveCurrency] / rates[sendCurrency]
+      : undefined;
+
+  // Sorted + filtered list for modal (exclude the opposite-side currency)
+  const sortedCurrencies = useMemo(() => {
+    const q = currencySearch.trim().toLowerCase();
+    const exclude = currencyPickerMode === 'send' ? receiveCurrency : sendCurrency;
+    const all = Object.keys(rates).filter((c) => c !== exclude);
+    const filtered = q
+      ? all.filter(
+          (c) =>
+            c.toLowerCase().includes(q) ||
+            getCurrencyName(c).toLowerCase().includes(q),
+        )
+      : all;
+    const priority = PRIORITY_CURRENCIES.filter((c) => filtered.includes(c));
+    const rest = filtered.filter((c) => !PRIORITY_CURRENCIES.includes(c)).sort();
+    return [...priority, ...rest];
+  }, [rates, currencySearch, currencyPickerMode, sendCurrency, receiveCurrency]);
+
+  const sendNumericAmount = parseFloat(sendAmount) || 0;
+
+  // Format amount with commas
+  const displayAmount = useMemo(() => {
+    if (!sendAmount) return '';
+    const parts = sendAmount.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  }, [sendAmount]);
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/,/g, '');
+    if (val === '') {
+      setSendAmount('');
+      return;
+    }
+    if (/^\d*\.?\d*$/.test(val)) {
+      setSendAmount(val);
+    }
+  };
 
   return (
     <div className="home-remake">
@@ -174,6 +307,7 @@ export default function HomePage() {
           </div>
 
           <aside className="transfer-card" aria-label={t('home.transfer.aria')}>
+            {/* Promo banner – shows live rate */}
             <div className="transfer-card__promo">
               <div className="transfer-card__promo-icon" aria-hidden="true">
                 <TagIcon />
@@ -183,61 +317,78 @@ export default function HomePage() {
                   {t('home.transfer.promo')}
                 </p>
                 <p className="transfer-card__promo-rate">
-                  <span>1 USD =</span>
-                  <span className="transfer-card__promo-old">17.55</span>
-                  <strong>18.011760 MXN</strong>
+                  {isLoadingRates ? (
+                    <span className="tc-rate-loading">Fetching live rate…</span>
+                  ) : rateError ? (
+                    <span style={{ color: '#dc2626', fontSize: '0.82rem' }}>Could not load rate</span>
+                  ) : (
+                    <>
+                      <span>1 {sendCurrency} =</span>
+                      <strong>{currentRate ? currentRate.toFixed(6) : '—'} {receiveCurrency}</strong>
+                    </>
+                  )}
                 </p>
               </div>
             </div>
 
+            {/* Transfer fields */}
             <div className="transfer-card__stack">
+              {/* You send – editable, with selectable currency */}
               <div className="transfer-field">
                 <div>
                   <p className="transfer-field__label">{t('home.transfer.youSend')}</p>
-                  <div className="transfer-field__currency">
-                    <USFlag />
-                    <span>USD</span>
-                  </div>
+                  <button
+                    type="button"
+                    className="transfer-field__currency transfer-field__currency--btn"
+                    onClick={() => {
+                      setCurrencyPickerMode('send');
+                      setCurrencySearch('');
+                      setShowCurrencyModal(true);
+                    }}
+                    aria-label={`Select send currency, currently ${sendCurrency}`}
+                  >
+                    <CurrencyFlag code={sendCurrency} size={22} />
+                    <span>{sendCurrency}</span>
+                    <ChevronSoftIcon />
+                  </button>
                 </div>
-                <p className="transfer-field__amount">1000</p>
+                <input
+                  id="home-send-amount"
+                  type="text"
+                  inputMode="decimal"
+                  value={displayAmount}
+                  onChange={handleAmountChange}
+                  className="transfer-field__amount transfer-field__amount--input"
+                  aria-label={`Amount to send in ${sendCurrency}`}
+                />
               </div>
 
+              {/* They receive – live converted */}
               <div className="transfer-field">
                 <div>
                   <p className="transfer-field__label">{t('home.transfer.theyReceive')}</p>
-                  <div className="transfer-field__currency">
-                    <MexicoFlag />
-                    <span>MXN</span>
+                  <button
+                    type="button"
+                    className="transfer-field__currency transfer-field__currency--btn"
+                    onClick={() => {
+                      setCurrencyPickerMode('receive');
+                      setCurrencySearch('');
+                      setShowCurrencyModal(true);
+                    }}
+                    aria-label={`Select receive currency, currently ${receiveCurrency}`}
+                  >
+                    <CurrencyFlag code={receiveCurrency} size={22} />
+                    <span>{receiveCurrency}</span>
                     <ChevronSoftIcon />
-                  </div>
+                  </button>
                 </div>
-                <p className="transfer-field__amount">18,011.76</p>
-              </div>
-            </div>
-
-            <div className="transfer-card__options">
-              <div className="transfer-option-row">
-                <span>{t('home.transfer.paymentMethod')}</span>
-                <button
-                  type="button"
-                  className="transfer-pill"
-                  onClick={() => setShowPaymentModal(true)}
-                >
-                  {t(paymentMethods.find((method) => method.key === selectedPaymentMethod)?.keyLabel ?? 'home.payment.debitCard')}
-                  <ChevronSoftIcon />
-                </button>
-              </div>
-
-              <div className="transfer-option-row">
-                <span>{t('home.transfer.deliveryMethod')}</span>
-                <button
-                  type="button"
-                  className="transfer-pill"
-                  onClick={() => setShowDeliveryModal(true)}
-                >
-                  {t(deliveryMethods.find((method) => method.key === selectedDeliveryMethod)?.keyLabel ?? 'home.delivery.bank')}
-                  <ChevronSoftIcon />
-                </button>
+                <p className="transfer-field__amount">
+                  {isLoadingRates ? (
+                    <span className="tc-rate-loading">…</span>
+                  ) : (
+                    convertedAmount
+                  )}
+                </p>
               </div>
             </div>
 
@@ -256,14 +407,29 @@ export default function HomePage() {
 
               <div className="transfer-summary-row transfer-summary-row--total">
                 <span>{t('home.transfer.totalToPay')}</span>
-                <strong>1,000 USD</strong>
+                <strong>
+                  {sendNumericAmount > 0
+                    ? new Intl.NumberFormat('en-US').format(sendNumericAmount) + ` ${sendCurrency}`
+                    : `0 ${sendCurrency}`}
+                </strong>
               </div>
             </div>
 
             <div className="transfer-card__actions">
-              <Link href="/login" className="transfer-card__primary">
+              <button
+                type="button"
+                className="transfer-card__primary"
+                onClick={() => {
+                  const amt = sendNumericAmount > 0
+                    ? new Intl.NumberFormat('en-US').format(sendNumericAmount)
+                    : '0';
+                  const received = convertedAmount !== '—' ? convertedAmount : '...';
+                  const msg = `Lệnh quy đổi từ ${amt} ${sendCurrency} sang ${received} ${receiveCurrency}`;
+                  window.dispatchEvent(new CustomEvent('open-chat', { detail: { message: msg } }));
+                }}
+              >
                 {t('home.transfer.getStarted')}
-              </Link>
+              </button>
 
               <Link href="/contact" className="transfer-card__secondary">
                 <WhatsAppIcon />
@@ -551,102 +717,93 @@ export default function HomePage() {
         </div>
       </section>
 
-      {showPaymentModal ? (
+      {/* Currency Picker Modal */}
+      {showCurrencyModal ? (
         <div
           className="method-modal"
           role="dialog"
           aria-modal="true"
-          aria-label={t('home.transfer.paymentMethod')}
-          onClick={() => setShowPaymentModal(false)}
+          aria-label="Select receive currency"
+          onClick={() => setShowCurrencyModal(false)}
         >
-          <div className="method-modal__card" onClick={(event) => event.stopPropagation()}>
+          <div
+            className="method-modal__card currency-picker-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="method-modal__header">
-              <h3>{t('home.transfer.paymentMethod')}</h3>
+              <h3>{currencyPickerMode === 'send' ? 'Select Send Currency' : 'Select Receive Currency'}</h3>
               <button
                 type="button"
                 className="method-modal__close"
-                onClick={() => setShowPaymentModal(false)}
-                aria-label={t('common.close')}
+                onClick={() => setShowCurrencyModal(false)}
+                aria-label="Close"
               >
                 ✕
               </button>
             </div>
 
-            <div className="method-modal__list">
-              {paymentMethods.map((method) => {
-                const isSelected = selectedPaymentMethod === method.key;
+            {/* Search input */}
+            <div className="currency-picker-search">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" /><path d="m21 21-4.35-4.35" />
+              </svg>
+              <input
+                id="currency-search"
+                type="text"
+                placeholder="Search currency or code (e.g. Euro, MXN)"
+                value={currencySearch}
+                onChange={(e) => setCurrencySearch(e.target.value)}
+                autoFocus
+                autoComplete="off"
+              />
+            </div>
 
+            {/* Rate error notice */}
+            {rateError && (
+              <p className="currency-picker-error">
+                ⚠️ Could not load live rates. Please try again later.
+              </p>
+            )}
+
+            {/* Currency list */}
+            <div className="method-modal__list currency-picker-list">
+              {sortedCurrencies.length === 0 && (
+                <p className="currency-picker-empty">No currencies found for &ldquo;{currencySearch}&rdquo;</p>
+              )}
+              {sortedCurrencies.map((code) => {
+                const isSelected =
+                  currencyPickerMode === 'send'
+                    ? sendCurrency === code
+                    : receiveCurrency === code;
+                const rate = rates[code];
                 return (
                   <button
-                    key={method.key}
+                    key={code}
                     type="button"
-                    className={`method-option${isSelected ? ' is-selected' : ''}`}
+                    className={`method-option currency-option${isSelected ? ' is-selected' : ''}`}
                     onClick={() => {
-                      setSelectedPaymentMethod(method.key);
-                      setShowPaymentModal(false);
+                      if (currencyPickerMode === 'send') {
+                        setSendCurrency(code);
+                        setSendAmount(''); // reset amount when base currency changes
+                      } else {
+                        setReceiveCurrency(code);
+                      }
+                      setCurrencySearch('');
+                      setShowCurrencyModal(false);
                     }}
                   >
-                    <span className="method-option__icon" aria-hidden="true">
-                      <MethodOptionIcon kind={method.icon} />
+                    <span className="currency-option__flag">
+                      <CurrencyFlag code={code} size={24} />
                     </span>
-                    <span className="method-option__label">{t(method.keyLabel)}</span>
-                    {isSelected ? (
-                      <span className="method-option__check" aria-hidden="true">
-                        <CheckCircleIcon />
+                    <span className="currency-option__info">
+                      <span className="currency-option__code">{code}</span>
+                      <span className="currency-option__name">{getCurrencyName(code)}</span>
+                    </span>
+                    {rate !== undefined && (
+                      <span className="currency-option__rate">
+                        {rate.toFixed(4)}
                       </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {showDeliveryModal ? (
-        <div
-          className="method-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-label={t('home.transfer.deliveryMethod')}
-          onClick={() => setShowDeliveryModal(false)}
-        >
-          <div className="method-modal__card" onClick={(event) => event.stopPropagation()}>
-            <div className="method-modal__header">
-              <h3>{t('home.transfer.deliveryMethod')}</h3>
-              <button
-                type="button"
-                className="method-modal__close"
-                onClick={() => setShowDeliveryModal(false)}
-                aria-label={t('common.close')}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="method-modal__list">
-              {deliveryMethods.map((method) => {
-                const isSelected = selectedDeliveryMethod === method.key;
-
-                return (
-                  <button
-                    key={method.key}
-                    type="button"
-                    className={`method-option${isSelected ? ' is-selected' : ''}`}
-                    onClick={() => {
-                      setSelectedDeliveryMethod(method.key);
-                      setShowDeliveryModal(false);
-                    }}
-                  >
-                    <span className="method-option__icon" aria-hidden="true">
-                      <MethodOptionIcon kind={method.icon} />
-                    </span>
-
-                    <span className="method-option__content">
-                      <span className="method-option__label">{t(method.keyLabel)}</span>
-                      <span className="method-option__rate">{method.rate}</span>
-                    </span>
-
+                    )}
                     {isSelected ? (
                       <span className="method-option__check" aria-hidden="true">
                         <CheckCircleIcon />

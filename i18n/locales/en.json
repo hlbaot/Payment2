@@ -213,6 +213,7 @@
   "chat.auto.order": "I can see you're asking about an order. Could you please provide the Order ID (e.g. #SW-XXXXXX) so I can pull up the details?",
   "chat.auto.payment": "I understand you have a payment concern. Please allow me a moment to check the transaction status on our end.",
   "chat.auto.hello": "Hello! Welcome to Ria Support. How can I help you today?",
+  "chat.auto.exchange": "Thank you! We've received your exchange request. A support agent will confirm the rate and process your order as soon as possible (usually within 5 minutes). Please wait!",
   "chat.email.title": "Enter your email first",
   "chat.email.desc": "Please share your email so support can follow up if you lose connection.",
   "chat.email.inputLabel": "Contact email",

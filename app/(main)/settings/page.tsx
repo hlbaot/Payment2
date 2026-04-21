@@ -183,7 +183,7 @@ export default function SettingsPage() {
                  </div>
                  <div className="space-y-4">
                     <div className="flex justify-between items-center group">
-                       <span className="text-[12px] font-bold text-gray-800">MacBook Pro 16" • NYC</span>
+                       <span className="text-[12px] font-bold text-gray-800">MacBook Pro 16&quot; • NYC</span>
                        <span className="text-[10px] font-bold text-orange-500 uppercase">Current</span>
                     </div>
                     <div className="flex justify-between items-center group">
